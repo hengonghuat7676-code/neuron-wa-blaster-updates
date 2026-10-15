@@ -1,6 +1,14 @@
 name: Build portable EXE
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/portable-release.yml'
+      - 'app/**'
+      - 'assets/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/**'
   workflow_dispatch:
     inputs:
       publish:
@@ -36,7 +44,7 @@ jobs:
           path: release-assets/v*/
           if-no-files-found: error
       - name: Publish new version
-        if: inputs.publish
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
