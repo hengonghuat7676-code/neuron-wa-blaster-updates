@@ -244,10 +244,12 @@ async function installDownloadedUpdate() {
   const logFile = path.join(updateFolder(), "portable-update.log");
   const markerFile = path.join(updateFolder(), "portable-update-result.json");
   const readyFile = path.join(updateFolder(), `helper-ready-${randomUUID()}.txt`);
+  const startupFile = path.join(updateFolder(), `app-started-${randomUUID()}.json`);
+  const startupTimeoutSeconds = 30;
   const powershell = path.join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   if (!existsSync(powershell)) throw new Error("Windows PowerShell is unavailable. Install the update manually.");
   await writeFile(script, [
-    "param([int]$OldPid,[string]$Source,[string]$Target,[string]$Version,[string]$LogFile,[string]$MarkerFile,[string]$ReadyFile,[string]$ExpectedHash)",
+    "param([int]$OldPid,[string]$Source,[string]$Target,[string]$Version,[string]$LogFile,[string]$MarkerFile,[string]$ReadyFile,[string]$StartupFile,[int]$StartupTimeoutSeconds,[string]$ExpectedHash)",
     "$ErrorActionPreference = 'Stop'",
     "function Write-UpdateLog([string]$Message) { Add-Content -LiteralPath $LogFile -Value ((Get-Date).ToString('o') + ' ' + $Message) -Encoding UTF8 }",
     "function Copy-WithRetry([string]$From,[string]$To) { for ($Attempt = 1; $Attempt -le 15; $Attempt++) { try { Copy-Item -LiteralPath $From -Destination $To -Force; return } catch { Write-UpdateLog ('Copy attempt ' + $Attempt + ' failed: ' + $_.Exception.Message); Start-Sleep -Milliseconds ([Math]::Min(5000, 400 * $Attempt)) } }; throw 'Unable to replace the executable after 15 attempts.' }",
@@ -265,10 +267,16 @@ async function installDownloadedUpdate() {
     "  Copy-WithRetry $Target $Backup",
     "  $BackupReady = $true",
     "  Copy-WithRetry $Source $Target",
-    "  Write-UpdateLog 'Replacement complete. Starting updated application.'",
+    "  Remove-Item -LiteralPath $StartupFile -Force -ErrorAction SilentlyContinue",
+    "  $env:NEURON_UPDATE_STARTUP_MARKER = $StartupFile",
+    "  Write-UpdateLog ('Replacement complete. Starting updated application ' + $Version)",
     "  $Started = Start-Process -FilePath $Target -WorkingDirectory $WorkDir -PassThru -WindowStyle Normal",
-    "  Start-Sleep -Seconds 6",
-    "  if ($Started.HasExited) { throw ('Updated application exited early with code ' + $Started.ExitCode) }",
+    "  $StartupDeadline = (Get-Date).AddSeconds($StartupTimeoutSeconds)",
+    "  while (-not (Test-Path -LiteralPath $StartupFile) -and (Get-Date) -lt $StartupDeadline) { Start-Sleep -Milliseconds 250 }",
+    "  if (-not (Test-Path -LiteralPath $StartupFile)) { throw ('Updated application did not show its main window within ' + $StartupTimeoutSeconds + ' seconds.') }",
+    "  $Startup = Get-Content -LiteralPath $StartupFile -Raw | ConvertFrom-Json",
+    "  if ($Startup.version -ne $Version) { throw ('Updated application reported version ' + $Startup.version + ' instead of ' + $Version + '.') }",
+    "  Write-UpdateLog ('Updated application main window is ready. PID ' + $Startup.pid)",
     "  @{ status = 'success'; version = $Version; time = (Get-Date).ToString('o'); pid = $Started.Id } | ConvertTo-Json | Set-Content -LiteralPath $MarkerFile -Encoding UTF8",
     "  Write-UpdateLog ('Update succeeded. New PID ' + $Started.Id)",
     "  Remove-Item -LiteralPath $Source -Force -ErrorAction SilentlyContinue",
@@ -290,7 +298,7 @@ async function installDownloadedUpdate() {
   const diagnostic = openSync(path.join(updateFolder(), "portable-update-helper.log"), "a");
   let helper;
   try {
-    helper = spawn(powershell, ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, "-OldPid", String(process.pid), "-Source", downloadedUpdate.path, "-Target", target, "-Version", downloadedUpdate.version, "-LogFile", logFile, "-MarkerFile", markerFile, "-ReadyFile", readyFile, "-ExpectedHash", downloadedUpdate.hash], { detached: true, stdio: ["ignore", diagnostic, diagnostic], windowsHide: true });
+    helper = spawn(powershell, ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, "-OldPid", String(process.pid), "-Source", downloadedUpdate.path, "-Target", target, "-Version", downloadedUpdate.version, "-LogFile", logFile, "-MarkerFile", markerFile, "-ReadyFile", readyFile, "-StartupFile", startupFile, "-StartupTimeoutSeconds", String(startupTimeoutSeconds), "-ExpectedHash", downloadedUpdate.hash], { detached: true, stdio: ["ignore", diagnostic, diagnostic], windowsHide: true });
   } finally { closeSync(diagnostic); }
   await new Promise((resolve, reject) => {
     const deadline = Date.now() + 15_000;
@@ -416,7 +424,14 @@ function createWindow() {
   });
   mainWindow.removeMenu();
   mainWindow.loadFile(path.join(here, "index.html"));
-  mainWindow.once("ready-to-show", () => mainWindow.show());
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
+    const startupMarker = process.env.NEURON_UPDATE_STARTUP_MARKER;
+    if (startupMarker) {
+      writeFile(startupMarker, JSON.stringify({ version: app.getVersion(), pid: process.pid }), "utf8")
+        .catch((error) => console.error("Unable to confirm updater startup:", error));
+    }
+  });
 }
 
 function registerIpc() {
