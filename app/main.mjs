@@ -1,6 +1,6 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, safeStorage } from "electron";
 import { mkdir, readFile, writeFile, rename, rm } from "node:fs/promises";
-import { createWriteStream, existsSync, unlinkSync, openSync, closeSync } from "node:fs";
+import { createWriteStream, existsSync, statSync, unlinkSync, openSync, closeSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
@@ -119,26 +119,77 @@ async function checkForUpdate(manual = false) {
   }
 }
 
-function downloadToFile(url, destination, onProgress, redirects = 0) {
+function downloadToFile(url, destination, onProgress, redirects = 0, retries = 0) {
   return new Promise((resolve, reject) => {
-    const request = https.get(url, { headers: { "User-Agent": "Neuron-WA-Blaster", Accept: "application/octet-stream" } }, (response) => {
+    let resumeFrom = 0;
+    try { if (existsSync(destination)) resumeFrom = statSync(destination).size; }
+    catch (error) { reject(error); return; }
+    const headers = { "User-Agent": "Neuron-WA-Blaster", Accept: "application/octet-stream" };
+    if (resumeFrom) headers.Range = `bytes=${resumeFrom}-`;
+    let handled = false;
+    const fail = (error, retryable = true) => {
+      if (handled) return;
+      handled = true;
+      activeDownload = null;
+      if (retryable && retries < 3) {
+        setTimeout(() => resolve(downloadToFile(url, destination, onProgress, redirects, retries + 1)), (retries + 1) * 1000);
+      } else reject(error);
+    };
+    const request = https.get(url, { headers }, (response) => {
       if ([301, 302, 303, 307, 308].includes(response.statusCode) && response.headers.location && redirects < 6) {
-        response.resume(); resolve(downloadToFile(response.headers.location, destination, onProgress, redirects + 1)); return;
+        handled = true;
+        response.resume(); resolve(downloadToFile(response.headers.location, destination, onProgress, redirects + 1, retries)); return;
       }
-      if (response.statusCode !== 200) { response.resume(); reject(new Error(`Download failed with HTTP ${response.statusCode}`)); return; }
-      const total = Number(response.headers["content-length"] || 0); let received = 0;
-      const output = createWriteStream(destination);
+      if (response.statusCode === 416 && resumeFrom) {
+        const range = String(response.headers["content-range"] || "").match(/^bytes \*\/(\d+)$/i);
+        response.resume();
+        if (range && Number(range[1]) === resumeFrom) {
+          handled = true;
+          activeDownload = null;
+          onProgress(resumeFrom, resumeFrom);
+          resolve(destination);
+        } else fail(new Error("The server rejected the resumed update download."));
+        return;
+      }
+      if (response.statusCode !== 200 && response.statusCode !== 206) {
+        response.resume();
+        const status = response.statusCode;
+        fail(new Error(`Download failed with HTTP ${status}`), [408, 429, 500, 502, 503, 504].includes(status));
+        return;
+      }
+      let offset = resumeFrom;
+      let total = Number(response.headers["content-length"] || 0);
+      if (response.statusCode === 206) {
+        const range = String(response.headers["content-range"] || "").match(/^bytes (\d+)-(\d+)\/(\d+|\*)$/i);
+        if (!range || Number(range[1]) !== resumeFrom) {
+          response.resume();
+          fail(new Error("The server returned an invalid range for the update download."), false);
+          return;
+        }
+        total = range[3] === "*" ? offset + total : Number(range[3]);
+      } else {
+        offset = 0;
+        if (resumeFrom) onProgress(0, total);
+      }
+      if (response.statusCode === 206 && total && response.headers["content-length"]) {
+        total = Math.max(total, offset + Number(response.headers["content-length"]));
+      }
+      let received = offset;
+      const output = createWriteStream(destination, { flags: offset ? "a" : "w" });
       activeDownload = request;
+      response.on("error", (error) => fail(error));
       response.on("data", (chunk) => { received += chunk.length; onProgress(received, total); });
       pipeline(response, output).then(() => {
-        if (total && received !== total) throw new Error("Incomplete update download. Please retry.");
+        if (total && received !== total) throw new Error("Incomplete update download.");
+        if (handled) return;
+        handled = true;
         activeDownload = null;
         resolve(destination);
-      }).catch((error) => { activeDownload = null; request.destroy(); reject(error); });
+      }).catch((error) => { request.destroy(); fail(error); });
     });
     activeDownload = request;
     request.setTimeout(120_000, () => request.destroy(new Error("Update download timed out")));
-    request.on("error", (error) => { activeDownload = null; reject(error); });
+    request.on("error", (error) => fail(error));
   });
 }
 
