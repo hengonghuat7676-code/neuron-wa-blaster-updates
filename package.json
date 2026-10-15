@@ -1,0 +1,59 @@
+{
+  "name": "neuron-wa-blaster",
+  "version": "3.4.1",
+  "description": "Neuron WA Blaster - desktop campaign manager for WhatsApp Web",
+  "main": "app/main.mjs",
+  "author": "Neuron",
+  "license": "UNLICENSED",
+  "scripts": {
+    "postinstall": "node scripts/patch-baileys-rc9.mjs",
+    "start": "electron .",
+    "check": "node --check app/main.mjs && node --check app/preload.cjs && node --check app/renderer.js && node --check app/wa-manager.mjs",
+    "test:qr": "node scripts/smoke-qr.mjs",
+    "test:ui": "node scripts/test-ui-contract.mjs",
+    "test:warming": "node scripts/test-warming-engine.mjs",
+    "test:cta": "node scripts/test-hero-cta-contract.mjs",
+    "test:runtime": "node scripts/test-runtime.mjs",
+    "test:updater": "node scripts/test-packaged-update.mjs",
+    "test:updater-regression": "node scripts/test-update-regressions.cjs",
+    "release:prepare": "node scripts/prepare-release.cjs",
+    "build:portable": "electron-builder --win portable",
+    "build:installer": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12",
+    "png-to-ico": "^3.0.2"
+  },
+  "build": {
+    "appId": "com.neuron.wablaster",
+    "productName": "Neuron WA Blaster",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "app/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "Neuron-WA-Blaster-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Neuron WA Blaster"
+    }
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc.9",
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4"
+  }
+}
