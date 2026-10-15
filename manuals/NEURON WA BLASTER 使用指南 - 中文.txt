@@ -1,0 +1,352 @@
+﻿NEURON WA BLASTER 3.3.1
+分步使用指南 - 简体中文
+============================================================
+1. 重要说明
+============================================================
+
+Neuron WA Blaster 是一款 Windows 应用程序，可在同一界面管理多个 WhatsApp
+账号、联系人、发送任务、历史记录以及账号养号功能。
+
+请只向已经同意接收消息的用户发送信息。未经许可、发送过快或重复发送，可能
+导致用户举报或 WhatsApp 限制账号。任何软件都无法保证账号永远不会被限制。
+
+系统要求：
+- 64 位 Windows 10 或 Windows 11。
+- 稳定的网络连接。
+- 手机中的 WhatsApp 必须保持正常使用。
+- 每个账号都必须能够使用 Linked devices（已关联设备）。
+- 有效的 Neuron WA Blaster License Key。
+
+============================================================
+2. 启动软件并激活许可证
+============================================================
+
+1. 打开“Neuron WA Blaster 3.3.1.exe”。
+2. 如果 Windows SmartScreen 显示警告，请先确认文件来自授权卖家。
+3. 软件未激活时会自动显示 License 页面。
+4. 在 License key 输入框中填写许可证密钥。
+5. 点击 Activate License。
+6. 激活成功后，状态会变成 Active，其他功能菜单将自动解锁。
+
+License 页面按钮：
+- Activate License：在当前电脑激活许可证。
+- Check Again：重新连接服务器检查许可证状态。
+- Copy Machine ID：复制电脑识别码，方便发送给卖家或客服。
+
+许可证规则：
+- 一个许可证密钥只能绑定一台 Windows 电脑。
+- 请勿将许可证密钥分享给他人。
+- 更换主要硬件或重新安装 Windows 后，Machine ID 可能会改变。
+- 在线验证成功后，最多可以离线使用 72 小时。请在期限前重新联网验证。
+
+============================================================
+3. 连接 WHATSAPP 账号
+============================================================
+
+1. 打开 Accounts 页面。
+2. 点击 + Add Account。
+3. 输入账号名称，例如“Sales 1”，然后点击 Continue to QR。
+4. 等待二维码显示。
+5. 在手机上打开 WhatsApp。
+6. 进入 Settings/Menu > Linked devices > Link a device。
+7. 扫描 Neuron WA Blaster 中的二维码。
+8. 等待账号状态变为 Connected。
+
+如需添加更多账号，请重复以上步骤。每个账号都有独立的后台会话，不需要显示
+WhatsApp Web 窗口。
+
+账号卡片按钮：
+- Connect / Scan QR：重新连接或显示二维码。
+- Rename：修改软件中的账号名称。
+- Logout：退出当前电脑上的 WhatsApp 会话。
+- Delete：从软件中删除账号及其本地会话。
+
+注意：
+- 不要让同一个账号同时运行两个任务。
+- 软件会标记正在用于发送任务或养号任务的账号。
+- 如果手机显示关联设备为“Google Chrome (Windows)”，这是 WhatsApp 的兼容
+  设备标识，并不代表必须打开 Chrome 窗口。
+
+============================================================
+4. 创建发送任务（CAMPAIGN）
+============================================================
+
+将联系人加入发送队列之前，必须先创建 Campaign。
+
+1. 打开 Queue 页面。
+2. 点击 + New Campaign。
+3. 输入任务名称，例如“October Promotion A”。
+4. 点击 Create Campaign。
+
+Campaign 卡片会显示：
+- Total：所有已分配的收件人数量。
+- Sent：WhatsApp 服务器已确认发送的数量。
+- Failed：发送失败的数量。
+- Unconfirmed：尚未取得服务器最终确认的数量。
+- Remaining：尚未处理完成的收件人数量。
+
+Campaign 按钮：
+- Open Sending：打开消息和发送设置。
+- Rename：修改任务名称。
+- Delete：删除任务，并将其中的联系人退回 Available Contacts。
+
+============================================================
+5. 添加联系人
+============================================================
+
+号码必须使用国际格式，不要输入加号、空格或连字符。
+马来西亚示例：60123456789
+印度尼西亚示例：628123456789
+
+A. 直接批量输入号码
+
+1. 打开 Contacts 页面。
+2. 在 Add contacts 输入框中每行输入一个号码。
+3. 如需完整联系人资料，请使用以下格式：
+   姓名,号码,Var1,Var2
+4. 示例：
+   Andrew,61412345678,Gold,Sydney
+   Sarah,60123456789,VIP,Kuala Lumpur
+5. 点击 Process and Add。
+
+B. 导入 CSV/TXT
+
+1. 点击 Import CSV/TXT。
+2. 选择 .csv 或 .txt 文件。
+3. 每一行只放一个联系人。
+4. 软件会统计有效、无效以及重复的数据。
+
+C. 添加单个联系人
+
+1. 点击 + Single Contact。
+2. 根据需要填写 Name、WhatsApp Number、Var 1 和 Var 2。
+3. 点击 Save。
+
+============================================================
+6. 批量选择联系人并加入 CAMPAIGN
+============================================================
+
+1. 确保已经创建目标 Campaign。
+2. 在 Contacts 页面中的 Number to select 输入数量，例如 500。
+3. 选择方式：
+   - In order：按照列表顺序选择。
+   - Random：随机选择。
+4. 点击 Select 500 Contacts。
+5. 检查 Selected 数量是否正确。
+6. 选择 Destination campaign。
+7. 点击 Add Selected to Campaign。
+
+已加入 Campaign 的联系人会从 Available contacts 页面隐藏，避免下一批联系人
+与之前的批次混在一起。如需查看所有联系人、所属任务和发送状态，请选择
+All contacts。
+
+其他功能：
+- Search：搜索姓名或号码。
+- Clear Selection：取消所有尚未加入任务的勾选。
+- Clear All：删除仍处于 Available 状态的联系人；已分配的联系人不会被删除。
+
+============================================================
+7. 编辑并发送消息
+============================================================
+
+1. 打开 Sending 页面。
+2. 在上方列表中选择 Campaign。
+3. 选择 Message type：
+   - Text
+   - Image + Caption
+   - Video + Caption
+   - Document + Caption
+   - Image + Caption + URL Button
+4. 在 Message 输入框中填写消息内容。
+5. 如果发送媒体文件，请点击 Browse 并选择文件。
+6. 选择状态为 Connected 和 Available 的 WhatsApp 账号。
+7. 设置 Minimum delay 和 Maximum delay。软件允许的最小值为 5 秒。
+   建议使用合理间隔，避免过于频繁发送。
+8. 检查预览以及 Waiting/Remaining 数量。
+9. 勾选确认收件人已经同意接收消息。
+10. 点击 Start This Campaign 或 Start [数量] Messages。
+
+运行期间：
+- Pause：暂停处理，不会删除进度。
+- Resume：继续处理剩余联系人。
+- Stop & Release Account：停止任务并释放账号，使其可以用于其他任务。
+
+如果账号断线或被限制：
+1. 暂停或停止 Campaign。
+2. 打开 Accounts 页面并连接替代账号。
+3. 返回 Sending 页面。
+4. 选择原来的 Campaign 和新的替代账号。
+5. 点击 Resume，软件会从 Remaining 联系人继续发送。
+
+============================================================
+8. 个性化变量与 SPINTAX
+============================================================
+
+个性化变量：
+- {name}  = 联系人姓名
+- {phone} = 联系人号码
+- {var1}  = Var 1 内容
+- {var2}  = Var 2 内容
+
+示例：
+你好 {name}，您在 {var2} 的 {var1} 专属优惠现已开放。
+
+Spintax 会为每位收件人随机选择一个内容。
+
+格式：
+{选项1|选项2|选项3}
+
+示例：
+{你好|您好|欢迎} {name}，{请查看|现在查看}我们的最新优惠。
+
+预览只会显示其中一个示例。每位收件人的实际内容会在发送前随机生成。
+
+============================================================
+9. 创建 CTA / URL 按钮
+============================================================
+
+1. 在 Sending 页面选择 Image + Caption + URL Button。
+2. 点击 Browse 并选择图片。
+3. 在 Message 中填写图片说明文字。
+4. 根据需要填写 Footer。
+5. 输入 Button text，例如 JOIN NOW 或 CLAIM NOW。
+6. 输入完整的 Destination URL，例如：
+   https://example.com/register
+7. 建议保持 Add the URL to the caption as a fallback 为勾选状态。
+8. 检查预览后启动 Campaign。
+
+按钮的实际显示方式可能因收件人的 WhatsApp 版本和 Meta 当前规则而不同。
+建议始终保留备用 URL，确保用户仍能看到链接。WhatsApp 有时会在消息旁显示
+信息图标，说明商家使用 Meta 的安全服务管理消息；这不是软件错误。
+
+============================================================
+10. 发送状态与 UNCONFIRMED
+============================================================
+
+- Waiting：等待发送。
+- Sending：正在发送。
+- Sent：WhatsApp 服务器已确认发送。
+- Failed：发送失败。
+- Unconfirmed：尚未收到最终服务器确认。消息可能已经出现在 WhatsApp 中，
+  因此请勿立即重新发送。
+
+出现 Unconfirmed 时：
+- 先检查发送方和接收方的 WhatsApp。
+- Retry Unconfirmed：将消息放回队列重新发送。只有确认消息未送达时才使用，
+  否则可能造成重复消息。
+- Skip Unconfirmed：不重新发送，并将其标记为失败，让 Campaign 继续运行。
+
+============================================================
+11. 账号养号（ACCOUNT WARMING）
+============================================================
+
+此功能会让选定账号在同一个 WhatsApp 群组内进行受控互动。所有选定账号必须
+已经加入同一个目标群组。
+
+1. 至少连接两个 WhatsApp 账号。
+2. 确保所有选定账号都已经加入目标群组。
+3. 打开 Account Warming。
+4. 点击 Refresh Groups。
+5. 选择 Target WhatsApp group。
+6. 勾选需要使用的账号。
+7. 每行输入一条消息，或点击 Import TXT 导入。
+8. 设置：
+   - Messages per account：每个账号的发送上限。
+   - Reply chance：以回复方式发送的概率。
+   - Minimum/Maximum activity delay：每次活动之间的延迟。
+   - Minimum/Maximum account cooldown：账号休息时间。
+   - Read chance：账号读取消息的概率。
+   - Idle read interval：空闲时检查消息的时间间隔。
+9. 点击 Start Warming。
+
+消息确认发送成功后，会从 Message Bank 顶部删除，下一次活动将使用下一条消息，
+不会一直重复同一条内容。养号消息也支持 Spintax。
+
+控制按钮：
+- Pause：暂时停止，之后可以继续。
+- Stop & Reset Progress：停止并清除本次进度；Message Bank 和设置会保留。
+- Clear Log：清除屏幕上的养号日志。
+
+如果出现“WhatsApp server did not acknowledge the message”，请先检查群组。
+消息可能已经送达，只是服务器确认延迟。软件会处理延迟确认，请不要立即手动
+重复发送。
+
+============================================================
+12. DASHBOARD、HISTORY 和 SETTINGS
+============================================================
+
+Dashboard：
+- 显示已连接账号、可用联系人、Campaign 数量以及发送结果。
+- Active Processes 显示 Running 或 Paused 的 Campaign/养号任务及其进度。
+- 点击 Open 可直接进入对应任务。
+
+History：
+- 显示时间、Campaign、账号、收件人、状态和详细信息。
+- Export CSV：将历史记录保存为 CSV 文件。
+- Clear All：确认后删除全部历史记录。
+
+Settings：
+- Theme：选择 Light 或 Dark 模式。
+- Compact mode：缩小表格间距，一次显示更多数据。
+- Software Update：从 GitHub 检查最新版本。软件每 24 小时最多自动检查一次。
+- 如果 Campaign 或养号任务正在运行，更新功能会被锁定，并且只显示 Update
+  Later。请先完成或暂停任务，然后再次检查更新。
+- 下载完成后会进行 SHA-256 校验。验证成功后，软件会替换便携版 EXE 并自动重启。
+- Reset campaign data：删除联系人、Campaign、Queue、养号进度、History 和
+  显示设置。WhatsApp 账号会话不会被删除。
+
+============================================================
+13. 关闭软件与本地数据
+============================================================
+
+- Campaign、联系人、进度、历史记录和会话均保存在当前电脑中。
+- 如果希望保留登录状态和进度，请勿删除 Windows 中的软件数据。
+- 如果稍后还要继续，请在关闭软件前先暂停正在运行的任务。
+- 消息处于 Sending 状态时，请勿关闭电脑。
+
+============================================================
+14. 常见问题处理
+============================================================
+
+二维码没有显示：
+- 检查网络，稍等片刻后重新打开 Connect / Scan QR。
+- 如有需要，请关闭并重新启动软件。
+
+账号显示 Connected，但没有收到消息：
+- 确认号码使用正确的国际格式。
+- 确认该号码已经注册 WhatsApp。
+- 在 Campaign/History 中检查 Failed 或 Unconfirmed 状态。
+- 使用已经同意接收消息的号码测试简单文字消息。
+
+许可证无法激活：
+- 检查网络，并确认密钥前后没有多余空格。
+- 点击 Check Again。
+- 将 License Key 和 Machine ID 发给卖家或客服。请勿发送 WhatsApp OTP、
+  PIN 或密码。
+
+Campaign 无法启动：
+- 确认 Campaign 中有 Waiting 联系人。
+- 选择 Connected 且 Available 的账号。
+- 按照 Message type 填写所需的消息、媒体或 URL。
+- 勾选收件人授权确认。
+- 先处理所有 Unconfirmed 消息。
+
+============================================================
+15. 推荐快速操作流程
+============================================================
+
+Activate License
+> Accounts：扫描并连接所有账号
+> Queue：创建 Campaign
+> Contacts：添加号码
+> Auto-select：选择一个批次
+> Add Selected to Campaign
+> Sending：编辑消息并选择发送账号
+> 设置延迟并检查预览
+> 确认收件人已经授权
+> Start Campaign
+> 在 Dashboard 和 History 查看进度
+
+联系客服时，请提供软件版本、错误截图、发生时间、Campaign 名称和 Machine ID。
+请勿向任何人提供 WhatsApp OTP、PIN 或密码。
+

@@ -1,0 +1,363 @@
+﻿NEURON WA BLASTER 3.3.1
+PANDUAN PENGGUNAAN - BAHASA INDONESIA
+============================================================
+1. INFORMASI PENTING
+============================================================
+
+Neuron WA Blaster adalah aplikasi Windows untuk mengelola beberapa akun WhatsApp,
+kontak, campaign pengiriman, riwayat, dan account warming dari satu tampilan.
+
+Gunakan aplikasi hanya untuk menghubungi penerima yang sudah memberikan izin.
+Pengiriman tanpa izin, terlalu cepat, atau berulang dapat mengakibatkan laporan spam
+dan pembatasan akun oleh WhatsApp. Tidak ada aplikasi yang dapat menjamin akun tidak
+terblokir.
+
+Persyaratan:
+- Windows 10 atau Windows 11, 64-bit.
+- Koneksi internet stabil.
+- WhatsApp pada telepon masih aktif.
+- Setiap akun harus dapat membuka Linked devices / Perangkat tertaut.
+- License key Neuron WA Blaster yang masih aktif.
+
+============================================================
+2. MENJALANKAN DAN MENGAKTIFKAN LISENSI
+============================================================
+
+1. Buka file "Neuron WA Blaster 3.3.1.exe".
+2. Jika Windows menampilkan peringatan SmartScreen, pastikan file berasal dari
+   penjual resmi sebelum melanjutkan.
+3. Halaman License akan muncul saat aplikasi belum diaktifkan.
+4. Masukkan license key ke kolom License key.
+5. Klik Activate License.
+6. Jika berhasil, status berubah menjadi Active dan menu aplikasi dapat digunakan.
+
+Tombol pada halaman License:
+- Activate License: mengaktifkan key pada komputer ini.
+- Check Again: memeriksa kembali status license ke server.
+- Copy Machine ID: menyalin identitas komputer untuk dikirim kepada penjual/support.
+
+Ketentuan lisensi:
+- Satu key dikunci ke satu komputer Windows.
+- Jangan membagikan license key kepada orang lain.
+- Perubahan perangkat keras besar atau instal ulang Windows dapat mengubah Machine ID.
+- Setelah validasi online berhasil, aplikasi dapat digunakan offline hingga 72 jam.
+  Sambungkan kembali ke internet sebelum batas tersebut habis.
+
+============================================================
+3. MENGHUBUNGKAN AKUN WHATSAPP
+============================================================
+
+1. Buka menu Accounts.
+2. Klik + Add Account.
+3. Isi nama akun, misalnya "Sales 1", lalu klik Continue to QR.
+4. Tunggu sampai QR code tampil.
+5. Di telepon, buka WhatsApp.
+6. Buka Settings/Menu > Linked devices > Link a device.
+7. Scan QR code yang tampil di Neuron WA Blaster.
+8. Tunggu sampai status akun menjadi Connected.
+
+Untuk menambahkan akun lain, ulangi langkah di atas. Setiap akun memakai sesi yang
+terpisah dan berjalan di latar belakang; jendela WhatsApp Web tidak perlu ditampilkan.
+
+Fungsi pada kartu akun:
+- Connect / Scan QR: menyambungkan ulang atau menampilkan QR.
+- Rename: mengganti nama akun di aplikasi.
+- Logout: keluar dari sesi WhatsApp pada komputer ini.
+- Delete: menghapus akun dan sesi lokalnya dari aplikasi.
+
+Catatan:
+- Jangan memilih akun yang sama untuk dua proses aktif sekaligus.
+- Aplikasi otomatis menandai akun yang sedang dipakai campaign atau warming.
+- Jika telepon menunjukkan perangkat "Google Chrome (Windows)", itu adalah identitas
+  sesi kompatibilitas WhatsApp dan bukan berarti jendela Chrome harus dibuka.
+
+============================================================
+4. MEMBUAT CAMPAIGN
+============================================================
+
+Campaign harus dibuat sebelum kontak dimasukkan ke antrean.
+
+1. Buka menu Queue.
+2. Klik + New Campaign.
+3. Masukkan nama campaign, misalnya "Promo Oktober A".
+4. Klik Create Campaign.
+
+Kartu campaign menampilkan:
+- Total: jumlah seluruh penerima.
+- Sent: pesan yang berhasil dikonfirmasi terkirim.
+- Failed: pesan yang gagal.
+- Unconfirmed: hasil pengiriman yang belum memperoleh konfirmasi server.
+- Remaining: jumlah penerima yang masih harus diproses.
+
+Tombol campaign:
+- Open Sending: membuka pengaturan pesan dan pengiriman.
+- Rename: mengganti nama campaign.
+- Delete: menghapus campaign dan mengembalikan kontaknya ke Available Contacts.
+
+============================================================
+5. MENAMBAHKAN KONTAK
+============================================================
+
+Gunakan format nomor internasional tanpa tanda plus, spasi, atau tanda hubung.
+Contoh Malaysia: 60123456789
+Contoh Indonesia: 628123456789
+
+A. Memasukkan banyak nomor secara langsung
+
+1. Buka menu Contacts.
+2. Masukkan satu nomor per baris pada kolom Add contacts.
+3. Untuk data lengkap, gunakan format:
+   Nama,Nomor,Var1,Var2
+4. Contoh:
+   Andi,628123456789,Gold,Jakarta
+   Siti,60123456789,VIP,Kuala Lumpur
+5. Klik Process and Add.
+
+B. Import CSV/TXT
+
+1. Klik Import CSV/TXT.
+2. Pilih file .csv atau .txt.
+3. Pastikan satu kontak berada pada satu baris.
+4. Aplikasi akan menghitung data valid, invalid, dan duplikat.
+
+C. Menambahkan satu kontak
+
+1. Klik + Single Contact.
+2. Isi Name, WhatsApp Number, Var 1, dan Var 2 sesuai kebutuhan.
+3. Klik Save.
+
+============================================================
+6. MEMILIH BATCH DAN MEMASUKKANNYA KE CAMPAIGN
+============================================================
+
+1. Pastikan campaign tujuan sudah dibuat.
+2. Di Contacts, masukkan jumlah pada Number to select, misalnya 500.
+3. Pilih metode:
+   - In order: memilih nomor berurutan dari daftar.
+   - Random: memilih nomor secara acak.
+4. Klik Select 500 Contacts.
+5. Periksa angka Selected.
+6. Pilih Destination campaign.
+7. Klik Add Selected to Campaign.
+
+Kontak yang sudah dimasukkan ke campaign tidak tampil lagi pada tampilan Available
+contacts, sehingga batch berikutnya tidak tercampur. Pilih All contacts jika ingin
+melihat semua kontak beserta nama campaign dan statusnya.
+
+Fungsi tambahan:
+- Search: mencari nama atau nomor.
+- Clear Selection: membatalkan semua checklist yang belum dimasukkan ke campaign.
+- Clear All: menghapus kontak yang masih Available; kontak dalam campaign tetap aman.
+
+============================================================
+7. MENYUSUN DAN MENGIRIM PESAN
+============================================================
+
+1. Buka menu Sending.
+2. Pilih campaign pada daftar bagian atas.
+3. Pilih Message type:
+   - Text
+   - Image + Caption
+   - Video + Caption
+   - Document + Caption
+   - Image + Caption + URL Button
+4. Masukkan isi pesan pada kolom Message.
+5. Untuk media, klik Browse dan pilih file.
+6. Pilih akun WhatsApp yang berstatus Connected dan Available.
+7. Atur Minimum delay dan Maximum delay. Nilai minimum aplikasi adalah 5 detik.
+   Gunakan jeda yang wajar dan jangan mengirim secara agresif.
+8. Periksa preview dan jumlah Waiting/Remaining.
+9. Centang konfirmasi bahwa penerima sudah memberikan izin.
+10. Klik Start This Campaign atau Start [jumlah] Messages.
+
+Saat berjalan:
+- Pause: menghentikan sementara tanpa menghapus progres.
+- Resume: melanjutkan sisa penerima.
+- Stop & Release Account: menghentikan campaign dan membebaskan akun agar dapat
+  dipakai campaign lain.
+
+Jika akun terputus atau dibatasi:
+1. Pause atau Stop campaign.
+2. Buka Accounts dan sambungkan akun pengganti.
+3. Kembali ke Sending.
+4. Pilih campaign yang sama dan akun pengganti.
+5. Klik Resume. Campaign melanjutkan penerima yang masih Remaining.
+
+============================================================
+8. PERSONALISASI DAN SPINTAX
+============================================================
+
+Token personalisasi:
+- {name}  = nama kontak
+- {phone} = nomor kontak
+- {var1}  = data Var 1
+- {var2}  = data Var 2
+
+Contoh:
+Halo {name}, promo khusus untuk pelanggan {var1} di {var2} sudah tersedia.
+
+Spintax memilih satu pilihan secara acak untuk setiap penerima.
+
+Format:
+{pilihan 1|pilihan 2|pilihan 3}
+
+Contoh:
+{Halo|Hai|Selamat datang} {name}, {silakan lihat|cek sekarang} penawaran kami.
+
+Preview menampilkan satu contoh variasi. Variasi sebenarnya dipilih ketika pesan
+untuk setiap penerima dibuat.
+
+============================================================
+9. MEMBUAT CTA / TOMBOL URL
+============================================================
+
+1. Pada Sending, pilih Message type:
+   Image + Caption + URL Button.
+2. Klik Browse dan pilih gambar.
+3. Isi caption pada Message.
+4. Isi Footer jika diperlukan.
+5. Isi Button text, misalnya JOIN NOW atau CLAIM NOW.
+6. Isi Destination URL lengkap, misalnya:
+   https://example.com/register
+7. Biarkan Add the URL to the caption as a fallback tetap dicentang.
+8. Periksa preview lalu mulai campaign.
+
+Tampilan tombol dapat berbeda tergantung versi WhatsApp penerima dan kebijakan Meta.
+Karena itu, penggunaan URL fallback sangat disarankan agar tautan tetap tersedia.
+Ikon informasi di samping pesan dapat ditampilkan oleh WhatsApp untuk menjelaskan
+bahwa pesan dikelola menggunakan layanan aman dari Meta; ini bukan error aplikasi.
+
+============================================================
+10. STATUS PENGIRIMAN DAN UNCONFIRMED
+============================================================
+
+- Waiting: menunggu giliran.
+- Sending: sedang dikirim.
+- Sent: server WhatsApp telah mengonfirmasi pengiriman.
+- Failed: pengiriman gagal.
+- Unconfirmed: aplikasi belum menerima konfirmasi akhir. Pesan mungkin sudah terlihat
+  pada WhatsApp penerima, jadi jangan langsung mengirim ulang.
+
+Jika terdapat Unconfirmed:
+- Periksa WhatsApp pengirim dan penerima terlebih dahulu.
+- Retry Unconfirmed: mengembalikan pesan ke antrean untuk dikirim ulang. Gunakan hanya
+  jika Anda yakin pesan belum terkirim karena dapat menyebabkan pesan ganda.
+- Skip Unconfirmed: tidak mengirim ulang dan menandainya gagal agar campaign dapat lanjut.
+
+============================================================
+11. ACCOUNT WARMING
+============================================================
+
+Fitur ini menjalankan aktivitas terkontrol antar-akun di sebuah grup WhatsApp.
+Semua akun terpilih harus sudah bergabung dalam grup yang sama.
+
+1. Hubungkan minimal dua akun WhatsApp.
+2. Pastikan semua akun sudah menjadi anggota grup target.
+3. Buka Account Warming.
+4. Klik Refresh Groups.
+5. Pilih Target WhatsApp group.
+6. Centang akun yang ingin digunakan.
+7. Masukkan satu pesan per baris, atau klik Import TXT.
+8. Atur:
+   - Messages per account: batas pesan tiap akun.
+   - Reply chance: peluang pesan dikirim sebagai balasan.
+   - Minimum/Maximum activity delay: jeda antaraktivitas.
+   - Minimum/Maximum account cooldown: waktu istirahat akun.
+   - Read chance: peluang akun membaca pesan.
+   - Idle read interval: interval pemeriksaan pesan saat idle.
+9. Klik Start Warming.
+
+Pesan yang sudah dikonfirmasi terkirim akan dihapus dari bagian teratas Message Bank,
+sehingga pesan berikutnya tidak sama. Spintax juga dapat digunakan pada warming.
+
+Kontrol:
+- Pause: berhenti sementara dan dapat dilanjutkan.
+- Stop & Reset Progress: berhenti dan menghapus progres sesi; Message Bank dan
+  pengaturan tetap disimpan.
+- Clear Log: membersihkan log tampilan warming.
+
+Jika muncul pesan "WhatsApp server did not acknowledge the message", periksa grup
+terlebih dahulu. Pesan mungkin sudah terkirim tetapi konfirmasinya terlambat. Aplikasi
+akan menangani delayed acknowledgement; hindari mengirim ulang secara manual dengan cepat.
+
+============================================================
+12. DASHBOARD, HISTORY, DAN SETTINGS
+============================================================
+
+Dashboard:
+- Menampilkan jumlah akun terhubung, kontak tersedia, campaign, dan hasil kirim.
+- Active Processes menampilkan campaign/warming yang Running atau Paused beserta progres.
+- Klik Open untuk langsung menuju proses tersebut.
+
+History:
+- Menampilkan waktu, campaign, akun, penerima, status, dan detail.
+- Export CSV: menyimpan riwayat ke file CSV.
+- Clear All: menghapus seluruh riwayat setelah konfirmasi.
+
+Settings:
+- Theme: memilih Light atau Dark mode.
+- Compact mode: memperkecil jarak tabel agar lebih banyak data terlihat.
+- Software Update: memeriksa update terbaru dari GitHub. Aplikasi juga memeriksa
+  update secara otomatis maksimal sekali setiap 24 jam.
+- Jika campaign atau warming sedang berjalan, update tidak dapat dijalankan dan hanya
+  tombol Update Later yang tersedia. Selesaikan atau pause proses, lalu periksa lagi.
+- Update yang diunduh diverifikasi menggunakan SHA-256 sebelum dipasang. Setelah
+  verifikasi berhasil, EXE diganti dan aplikasi dibuka kembali secara otomatis.
+- Reset campaign data: menghapus kontak, campaign, queue, progres warming, history,
+  dan pengaturan tampilan. Sesi akun WhatsApp tidak ikut dihapus.
+
+============================================================
+13. PENUTUPAN APLIKASI DAN PENYIMPANAN DATA
+============================================================
+
+- Data campaign, kontak, progres, history, dan sesi disimpan secara lokal di komputer.
+- Jangan menghapus data aplikasi Windows jika ingin mempertahankan login dan progres.
+- Pause proses sebelum menutup aplikasi jika Anda ingin melanjutkannya nanti.
+- Jangan mematikan komputer ketika pesan sedang berstatus Sending.
+
+============================================================
+14. TROUBLESHOOTING SINGKAT
+============================================================
+
+QR tidak muncul:
+- Pastikan internet aktif, tunggu sebentar, lalu buka ulang Connect / Scan QR.
+- Tutup dan buka kembali aplikasi jika diperlukan.
+
+Akun Connected tetapi pesan tidak diterima:
+- Pastikan format nomor benar dan memiliki kode negara.
+- Periksa apakah nomor aktif di WhatsApp.
+- Periksa status Failed atau Unconfirmed pada campaign/history.
+- Uji dengan pesan teks sederhana ke nomor yang sudah memberikan izin.
+
+License tidak aktif:
+- Pastikan internet aktif dan key diketik tanpa spasi tambahan.
+- Klik Check Again.
+- Kirim License Key dan Machine ID kepada penjual/support. Jangan mengirim kode OTP
+  WhatsApp atau data pribadi lainnya.
+
+Campaign tidak dapat dimulai:
+- Pastikan campaign memiliki kontak Waiting.
+- Pilih akun Connected yang Available.
+- Isi pesan/media/URL sesuai Message type.
+- Centang konfirmasi izin penerima.
+- Selesaikan status Unconfirmed terlebih dahulu.
+
+============================================================
+15. ALUR CEPAT YANG DIREKOMENDASIKAN
+============================================================
+
+Activate License
+> Accounts: scan semua akun
+> Queue: buat campaign
+> Contacts: masukkan nomor
+> Auto-select: pilih batch
+> Add Selected to Campaign
+> Sending: buat pesan dan pilih akun
+> Atur delay dan periksa preview
+> Konfirmasi izin penerima
+> Start Campaign
+> Pantau Dashboard dan History
+
+Untuk bantuan, sertakan versi aplikasi, screenshot error, waktu kejadian, nama
+campaign, dan Machine ID. Jangan pernah mengirim OTP, PIN, atau password WhatsApp.
+
