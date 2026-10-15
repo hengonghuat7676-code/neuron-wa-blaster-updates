@@ -424,7 +424,11 @@ function createWindow() {
   });
   mainWindow.removeMenu();
   mainWindow.loadFile(path.join(here, "index.html"));
-  mainWindow.once("ready-to-show", () => {
+  mainWindow.once("ready-to-show", async () => {
+    const version = JSON.stringify(app.getVersion());
+    try {
+      await mainWindow.webContents.executeJavaScript(`(() => { const version = ${version}; document.querySelector("#appBrandVersion").textContent = "WA BLASTER " + version; document.querySelector("#installedVersion").textContent = version; document.querySelector("#aboutVersion").textContent = "Version " + version; })()`);
+    } catch (error) { console.error("Unable to display application version:", error); }
     mainWindow.show();
     const startupMarker = process.env.NEURON_UPDATE_STARTUP_MARKER;
     if (startupMarker) {

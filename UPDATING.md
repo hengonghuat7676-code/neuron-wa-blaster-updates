@@ -1,8 +1,8 @@
 # Portable release updates
 
-Source version: 3.4.2. The original `dist` EXEs are older builds and do not contain these fixes.
+Source version: 3.4.3. The original `dist` EXEs are older builds and do not contain these fixes.
 
-## Build and publish 3.4.2
+## Build and publish 3.4.3
 
 Use a Windows environment with Node.js and npm installed. From this directory:
 
@@ -13,9 +13,9 @@ npm run build:portable
 npm run release:prepare
 ```
 
-Create a published, stable GitHub release tagged `v3.4.2` in
+Create a published, stable GitHub release tagged `v3.4.3` in
 `hengonghuat7676-code/neuron-wa-blaster-updates`. Upload the EXE,
-its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.2`.
+its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.3`.
 Both checksum files must refer to the same EXE. Do not mix assets from other versions.
 The preparation script rejects EXEs older than the updater source edits.
 

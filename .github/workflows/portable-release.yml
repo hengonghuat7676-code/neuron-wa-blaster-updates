@@ -1,14 +1,6 @@
 name: Build portable EXE
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/portable-release.yml'
-      - 'app/**'
-      - 'assets/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'scripts/**'
   workflow_dispatch:
     inputs:
       publish:
@@ -38,13 +30,14 @@ jobs:
       - run: npm run test:ui
       - run: npm run build:portable -- --publish never
       - run: npm run release:prepare
+      - run: npm run test:portable
       - uses: actions/upload-artifact@v4
         with:
           name: neuron-portable-release
           path: release-assets/v*/
           if-no-files-found: error
       - name: Publish new version
-        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        if: inputs.publish
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
