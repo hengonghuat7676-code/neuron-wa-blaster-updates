@@ -39,7 +39,7 @@ const version = require('../package.json').version;
     socket = new WebSocket(target.webSocketDebuggerUrl);
     await new Promise((resolve, reject) => { socket.addEventListener('open', resolve, { once: true }); socket.addEventListener('error', reject, { once: true }); });
     const result = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('Renderer inspection timed out')), 10000);
+      const timer = setTimeout(() => reject(new Error('Renderer inspection timed out')), 15000);
       socket.addEventListener('message', event => {
         const data = JSON.parse(event.data);
         if (data.id !== 1) return;
@@ -48,10 +48,12 @@ const version = require('../package.json').version;
         else resolve(data.result.result.value);
       });
       socket.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: {
-        expression: `({brand:document.querySelector('.brand').innerText,checkButton:!!document.querySelector('#checkUpdates'),bridge:typeof window.neuron.installUpdate})`, returnByValue: true
+        expression: `(async()=>{const version=${JSON.stringify(version)};for(let attempt=0;attempt<100;attempt+=1){const brand=document.querySelector('.brand')?.innerText||'';const installed=document.querySelector('#installedVersion')?.textContent||'';const about=document.querySelector('#aboutVersion')?.textContent||'';if(brand.includes('WA BLASTER '+version)&&installed===version&&about==='Version '+version)return {brand,installed,about,checkButton:!!document.querySelector('#checkUpdates'),bridge:typeof window.neuron.installUpdate};await new Promise(resolve=>setTimeout(resolve,100));}return {brand:document.querySelector('.brand')?.innerText||'',installed:document.querySelector('#installedVersion')?.textContent||'',about:document.querySelector('#aboutVersion')?.textContent||'',checkButton:!!document.querySelector('#checkUpdates'),bridge:typeof window.neuron.installUpdate};})()`, returnByValue: true, awaitPromise: true
       } }));
     });
     assert.ok(result.brand.includes(version), 'Packaged UI version must match package.json');
+    assert.equal(result.installed, version);
+    assert.equal(result.about, `Version ${version}`);
     assert.equal(result.checkButton, true);
     assert.equal(result.bridge, 'function');
     console.log(`PASS: portable ${version} starts with isolated data, update UI and IPC bridge`);
