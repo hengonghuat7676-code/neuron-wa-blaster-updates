@@ -1,0 +1,57 @@
+name: Build portable EXE
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/portable-release.yml'
+      - 'app/**'
+      - 'assets/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/**'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a stable release for installed applications
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portable-release
+  cancel-in-progress: false
+
+jobs:
+  portable:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:updater-regression
+      - run: npm run test:ui
+      - run: npm run build:portable -- --publish never
+      - run: npm run release:prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neuron-portable-release
+          path: release-assets/v*/
+          if-no-files-found: error
+      - name: Publish new version
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $tag = "v$version"
+          gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) { throw "Release $tag already exists. Bump the version before publishing." }
+          gh release create $tag --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Neuron WA Blaster $tag" --generate-notes --latest "release-assets/$tag/Neuron-WA-Blaster-$version.exe" "release-assets/$tag/Neuron-WA-Blaster-$version.exe.sha256" "release-assets/$tag/SHA256SUMS.txt"
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }

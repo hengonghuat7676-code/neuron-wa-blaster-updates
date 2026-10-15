@@ -1,0 +1,51 @@
+# Portable release updates
+
+Source version: 3.4.1. The original `dist` EXEs are older builds and do not contain these fixes.
+
+## Build and publish 3.4.1
+
+Use a Windows environment with Node.js and npm installed. From this directory:
+
+```powershell
+npm run check
+npm run test:updater-regression
+npm run build:portable
+npm run release:prepare
+```
+
+Create a published, stable GitHub release tagged `v3.4.1` in
+`hengonghuat7676-code/neuron-wa-blaster-updates`. Upload the EXE,
+its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.1`.
+Both checksum files must refer to the same EXE. Do not mix assets from other versions.
+The preparation script rejects EXEs older than the updater source edits.
+
+Run the existing 3.4.0 portable application, pause running tasks, and select
+Settings > Check for Updates. The updater works with the portable EXE, not
+`win-unpacked`, development mode or an NSIS installation.
+
+If the old executable cannot complete the update, download the new portable
+EXE manually, close the old application, and launch the new EXE using the
+same Windows account. Keep the existing application user-data folder.
+
+Inspect `updates/portable-update.log` and `updates/portable-update-result.json`
+inside the application user-data directory for replacement/restart failures.
+`updates/portable-update-helper.log` captures PowerShell startup errors. The
+application stays open unless the helper confirms it is ready within 15 seconds.
+
+## GitHub build workflow
+
+Upload the source files, assets, scripts, package files, and `.github` directory
+to the repository. Do not upload user-data directories, WhatsApp sessions,
+`node_modules`, or old build outputs. Run **Build portable EXE** from Actions.
+With `publish` disabled it produces a downloadable release artifact. Enable
+`publish` to create a new stable release. Existing releases are never overwritten.
+
+The connected GitHub integration returned HTTP 403 when creating a branch;
+remote source changes require repository Contents write permission.
+
+## Existing 3.4.0 release
+
+The root `release-assets` directory includes the existing 3.4.0 EXE and matching
+checksums. This repairs the local release inputs for older clients updating to
+3.4.0; it does not insert the source fixes into that EXE. Use a separate release
+tag for each version. Older 3.3.x assets are retained for reference.

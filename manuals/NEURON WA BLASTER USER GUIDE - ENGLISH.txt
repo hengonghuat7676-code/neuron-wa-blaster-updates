@@ -1,0 +1,361 @@
+﻿NEURON WA BLASTER 3.3.1
+STEP-BY-STEP USER GUIDE - ENGLISH
+============================================================
+1. IMPORTANT INFORMATION
+============================================================
+
+Neuron WA Blaster is a Windows application for managing multiple WhatsApp accounts,
+contacts, sending campaigns, history, and account warming from one interface.
+
+Only message recipients who have given permission to receive your messages.
+Unsolicited, excessive, or repetitive messaging may result in spam reports or account
+restrictions by WhatsApp. No application can guarantee that an account will never be
+restricted.
+
+Requirements:
+- 64-bit Windows 10 or Windows 11.
+- A stable internet connection.
+- WhatsApp must remain active on the phone.
+- Each account must have access to Linked devices.
+- An active Neuron WA Blaster license key.
+
+============================================================
+2. STARTING THE APPLICATION AND ACTIVATING THE LICENSE
+============================================================
+
+1. Open "Neuron WA Blaster 3.3.1.exe".
+2. If Windows SmartScreen appears, confirm that the file came from the authorized
+   seller before continuing.
+3. The License page appears when the application is not activated.
+4. Enter your key in the License key field.
+5. Click Activate License.
+6. After successful activation, the status changes to Active and the other menus unlock.
+
+License page buttons:
+- Activate License: activates the key on this computer.
+- Check Again: checks the license status with the server again.
+- Copy Machine ID: copies the computer identity for the seller/support team.
+
+License conditions:
+- One key is locked to one Windows computer.
+- Do not share your license key.
+- Major hardware changes or reinstalling Windows may change the Machine ID.
+- After a successful online validation, offline use is allowed for up to 72 hours.
+  Reconnect to the internet before that period expires.
+
+============================================================
+3. CONNECTING WHATSAPP ACCOUNTS
+============================================================
+
+1. Open Accounts.
+2. Click + Add Account.
+3. Enter an account name, such as "Sales 1", then click Continue to QR.
+4. Wait for the QR code to appear.
+5. Open WhatsApp on the phone.
+6. Open Settings/Menu > Linked devices > Link a device.
+7. Scan the QR code shown in Neuron WA Blaster.
+8. Wait until the account status changes to Connected.
+
+Repeat these steps to add more accounts. Every account uses an isolated background
+session; a visible WhatsApp Web window is not required.
+
+Account card controls:
+- Connect / Scan QR: reconnects the account or displays its QR code.
+- Rename: changes the account name inside the application.
+- Logout: signs out this computer's WhatsApp session.
+- Delete: removes the account and its local session from the application.
+
+Notes:
+- Do not use the same account in two active processes at the same time.
+- The application marks accounts that are busy with a campaign or warming session.
+- If the phone lists the linked device as "Google Chrome (Windows)", this is the
+  WhatsApp compatibility identity and does not require a visible Chrome window.
+
+============================================================
+4. CREATING A CAMPAIGN
+============================================================
+
+A campaign must be created before contacts can be assigned to it.
+
+1. Open Queue.
+2. Click + New Campaign.
+3. Enter a campaign name, such as "October Promotion A".
+4. Click Create Campaign.
+
+Each campaign card shows:
+- Total: all assigned recipients.
+- Sent: messages confirmed by the WhatsApp server.
+- Failed: failed delivery attempts.
+- Unconfirmed: attempts without final server confirmation.
+- Remaining: recipients that still need to be processed.
+
+Campaign controls:
+- Open Sending: opens message and sending settings.
+- Rename: changes the campaign name.
+- Delete: deletes the campaign and returns its contacts to Available Contacts.
+
+============================================================
+5. ADDING CONTACTS
+============================================================
+
+Use international number format without a plus sign, spaces, or hyphens.
+Malaysia example: 60123456789
+Indonesia example: 628123456789
+
+A. Add multiple numbers directly
+
+1. Open Contacts.
+2. Enter one number per line in Add contacts.
+3. For complete contact data, use:
+   Name,Number,Var1,Var2
+4. Example:
+   Andrew,61412345678,Gold,Sydney
+   Sarah,60123456789,VIP,Kuala Lumpur
+5. Click Process and Add.
+
+B. Import CSV/TXT
+
+1. Click Import CSV/TXT.
+2. Select a .csv or .txt file.
+3. Keep one contact on each line.
+4. The application reports valid, invalid, and duplicate entries.
+
+C. Add one contact
+
+1. Click + Single Contact.
+2. Enter Name, WhatsApp Number, Var 1, and Var 2 as needed.
+3. Click Save.
+
+============================================================
+6. SELECTING A BATCH AND ASSIGNING IT TO A CAMPAIGN
+============================================================
+
+1. Make sure the destination campaign has already been created.
+2. In Contacts, enter a quantity under Number to select, for example 500.
+3. Choose a selection method:
+   - In order: selects contacts sequentially from the list.
+   - Random: selects contacts randomly.
+4. Click Select 500 Contacts.
+5. Verify the Selected count.
+6. Choose the Destination campaign.
+7. Click Add Selected to Campaign.
+
+Assigned contacts disappear from the Available contacts view, preventing the next
+batch from being mixed with earlier batches. Select All contacts to view every contact,
+its campaign, and its delivery status.
+
+Additional controls:
+- Search: finds a name or number.
+- Clear Selection: clears all unchecked campaign selections.
+- Clear All: deletes contacts that are still Available; assigned contacts are retained.
+
+============================================================
+7. COMPOSING AND SENDING A MESSAGE
+============================================================
+
+1. Open Sending.
+2. Select a campaign from the list at the top.
+3. Select a Message type:
+   - Text
+   - Image + Caption
+   - Video + Caption
+   - Document + Caption
+   - Image + Caption + URL Button
+4. Enter the message in the Message field.
+5. For media messages, click Browse and choose the file.
+6. Choose a WhatsApp account marked Connected and Available.
+7. Set Minimum delay and Maximum delay. The application's minimum is 5 seconds.
+   Use reasonable delays and avoid aggressive sending.
+8. Check the preview and the Waiting/Remaining totals.
+9. Confirm that the recipients have opted in.
+10. Click Start This Campaign or Start [number] Messages.
+
+While running:
+- Pause: temporarily stops processing without deleting progress.
+- Resume: continues with the remaining recipients.
+- Stop & Release Account: stops the campaign and frees the account for another campaign.
+
+If an account disconnects or becomes restricted:
+1. Pause or stop the campaign.
+2. Open Accounts and connect a replacement account.
+3. Return to Sending.
+4. Select the same campaign and the replacement account.
+5. Click Resume. Processing continues from the Remaining recipients.
+
+============================================================
+8. PERSONALIZATION AND SPINTAX
+============================================================
+
+Personalization tokens:
+- {name}  = contact name
+- {phone} = contact number
+- {var1}  = Var 1 value
+- {var2}  = Var 2 value
+
+Example:
+Hello {name}, your special {var1} offer for {var2} is now available.
+
+Spintax randomly selects one option for each recipient.
+
+Format:
+{option 1|option 2|option 3}
+
+Example:
+{Hello|Hi|Welcome} {name}, {please view|check out} our latest offer.
+
+The preview displays one sample variation. The actual variation is selected when each
+recipient's message is prepared.
+
+============================================================
+9. CREATING A CTA / URL BUTTON
+============================================================
+
+1. In Sending, select Image + Caption + URL Button.
+2. Click Browse and choose an image.
+3. Enter the caption under Message.
+4. Enter an optional Footer.
+5. Enter Button text, such as JOIN NOW or CLAIM NOW.
+6. Enter the full Destination URL, for example:
+   https://example.com/register
+7. Keep Add the URL to the caption as a fallback enabled.
+8. Check the preview and start the campaign.
+
+Button appearance may vary according to the recipient's WhatsApp version and Meta's
+current behavior. Keeping the fallback URL enabled is strongly recommended. WhatsApp
+may show an information icon explaining that the business used a secure Meta service
+to manage the message; this is not an application error.
+
+============================================================
+10. DELIVERY STATUS AND UNCONFIRMED MESSAGES
+============================================================
+
+- Waiting: waiting for its turn.
+- Sending: currently being sent.
+- Sent: confirmed by the WhatsApp server.
+- Failed: the attempt failed.
+- Unconfirmed: final server confirmation was not received. The message may already be
+  visible in WhatsApp, so do not retry immediately.
+
+When Unconfirmed messages exist:
+- Check the sender and recipient WhatsApp accounts first.
+- Retry Unconfirmed: returns them to the queue. Only use this if you are certain they
+  were not delivered, because retrying may produce duplicates.
+- Skip Unconfirmed: does not resend them and marks them failed so the campaign can continue.
+
+============================================================
+11. ACCOUNT WARMING
+============================================================
+
+This feature runs controlled activity between selected accounts inside one WhatsApp
+group. All selected accounts must already be members of the same group.
+
+1. Connect at least two WhatsApp accounts.
+2. Make sure all selected accounts have joined the target group.
+3. Open Account Warming.
+4. Click Refresh Groups.
+5. Select the Target WhatsApp group.
+6. Select the accounts to use.
+7. Enter one message per line, or click Import TXT.
+8. Configure:
+   - Messages per account: maximum messages for each account.
+   - Reply chance: probability of sending a message as a reply.
+   - Minimum/Maximum activity delay: delay between activities.
+   - Minimum/Maximum account cooldown: account rest period.
+   - Read chance: probability that an account reads messages.
+   - Idle read interval: message-check interval while idle.
+9. Click Start Warming.
+
+After a message is confirmed as sent, it is removed from the top of the Message Bank,
+so the next activity uses the next message. Spintax is supported in warming messages.
+
+Controls:
+- Pause: temporarily stops the session and allows it to resume.
+- Stop & Reset Progress: stops and clears session progress; the Message Bank and
+  settings are retained.
+- Clear Log: clears the displayed warming log.
+
+If "WhatsApp server did not acknowledge the message" appears, check the group first.
+The message may have been delivered while confirmation was delayed. The application
+handles delayed acknowledgements; avoid immediately resending the message manually.
+
+============================================================
+12. DASHBOARD, HISTORY, AND SETTINGS
+============================================================
+
+Dashboard:
+- Shows connected accounts, available contacts, campaigns, and delivery results.
+- Active Processes shows Running or Paused campaigns/warming sessions and progress.
+- Click Open to go directly to that process.
+
+History:
+- Shows time, campaign, account, recipient, status, and details.
+- Export CSV: saves the history as a CSV file.
+- Clear All: deletes all history after confirmation.
+
+Settings:
+- Theme: selects Light or Dark mode.
+- Compact mode: reduces table spacing to show more records.
+- Software Update: checks GitHub for the latest release. The application also checks
+  automatically no more than once every 24 hours.
+- If a campaign or warming session is running, updating is blocked and only Update
+  Later is available. Finish or pause the process, then check again.
+- Downloads are verified with SHA-256 before installation. After verification, the
+  portable EXE is replaced and the application restarts automatically.
+- Reset campaign data: deletes contacts, campaigns, queues, warming progress, history,
+  and display settings. WhatsApp account sessions are not removed.
+
+============================================================
+13. CLOSING THE APPLICATION AND LOCAL DATA
+============================================================
+
+- Campaigns, contacts, progress, history, and sessions are stored locally.
+- Do not delete Windows application data if you want to keep login sessions and progress.
+- Pause active work before closing the application if you intend to resume later.
+- Do not shut down the computer while a message is marked Sending.
+
+============================================================
+14. QUICK TROUBLESHOOTING
+============================================================
+
+QR code does not appear:
+- Check the internet connection, wait briefly, and reopen Connect / Scan QR.
+- Restart the application if necessary.
+
+Account is Connected but the message is not received:
+- Check that the number uses the correct international format.
+- Confirm that the number is registered on WhatsApp.
+- Check for Failed or Unconfirmed status in the campaign/history.
+- Test a simple text message with a recipient who has opted in.
+
+License is not active:
+- Check the internet connection and remove accidental spaces from the key.
+- Click Check Again.
+- Send the License Key and Machine ID to the seller/support team. Never send your
+  WhatsApp OTP, PIN, or password.
+
+Campaign cannot start:
+- Make sure the campaign has Waiting contacts.
+- Select a Connected and Available account.
+- Complete the message/media/URL required by the selected Message type.
+- Confirm recipient opt-in.
+- Resolve any Unconfirmed messages first.
+
+============================================================
+15. RECOMMENDED QUICK WORKFLOW
+============================================================
+
+Activate License
+> Accounts: scan all accounts
+> Queue: create a campaign
+> Contacts: add numbers
+> Auto-select: select a batch
+> Add Selected to Campaign
+> Sending: compose the message and select an account
+> Set delays and verify the preview
+> Confirm recipient opt-in
+> Start Campaign
+> Monitor Dashboard and History
+
+For support, provide the application version, an error screenshot, time of the event,
+campaign name, and Machine ID. Never provide a WhatsApp OTP, PIN, or password.
+
