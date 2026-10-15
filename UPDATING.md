@@ -1,8 +1,8 @@
 # Portable release updates
 
-Source version: 3.4.1. The original `dist` EXEs are older builds and do not contain these fixes.
+Source version: 3.4.2. The original `dist` EXEs are older builds and do not contain these fixes.
 
-## Build and publish 3.4.1
+## Build and publish 3.4.2
 
 Use a Windows environment with Node.js and npm installed. From this directory:
 
@@ -13,13 +13,13 @@ npm run build:portable
 npm run release:prepare
 ```
 
-Create a published, stable GitHub release tagged `v3.4.1` in
+Create a published, stable GitHub release tagged `v3.4.2` in
 `hengonghuat7676-code/neuron-wa-blaster-updates`. Upload the EXE,
-its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.1`.
+its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.2`.
 Both checksum files must refer to the same EXE. Do not mix assets from other versions.
 The preparation script rejects EXEs older than the updater source edits.
 
-Run the existing 3.4.0 portable application, pause running tasks, and select
+Run the existing portable application, pause running tasks, and select
 Settings > Check for Updates. The updater works with the portable EXE, not
 `win-unpacked`, development mode or an NSIS installation.
 
@@ -30,7 +30,8 @@ same Windows account. Keep the existing application user-data folder.
 Inspect `updates/portable-update.log` and `updates/portable-update-result.json`
 inside the application user-data directory for replacement/restart failures.
 `updates/portable-update-helper.log` captures PowerShell startup errors. The
-application stays open unless the helper confirms it is ready within 15 seconds.
+previous application stays open until the helper is ready. The helper only
+reports success after the updated application's main window is ready to show.
 
 ## GitHub build workflow
 
