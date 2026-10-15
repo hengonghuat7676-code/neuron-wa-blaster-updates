@@ -1,0 +1,29 @@
+const { contextBridge, ipcRenderer } = require("electron");
+
+contextBridge.exposeInMainWorld("neuron", {
+  setTheme: (theme) => ipcRenderer.invoke("theme:set", theme),
+  copyText: (value) => ipcRenderer.invoke("clipboard:write", value),
+  setUpdateBusy: (busy) => ipcRenderer.invoke("update:set-busy", busy),
+  checkForUpdates: (manual) => ipcRenderer.invoke("update:check", manual),
+  downloadUpdate: (info) => ipcRenderer.invoke("update:download", info),
+  installUpdate: () => ipcRenderer.invoke("update:install"),
+  licenseStatus: () => ipcRenderer.invoke("license:status"),
+  activateLicense: (key) => ipcRenderer.invoke("license:activate", key),
+  listAccounts: () => ipcRenderer.invoke("accounts:list"),
+  addAccount: (name) => ipcRenderer.invoke("accounts:add", name),
+  connectAccount: (id) => ipcRenderer.invoke("accounts:connect", id),
+  renameAccount: (id, name) => ipcRenderer.invoke("accounts:rename", id, name),
+  logoutAccount: (id) => ipcRenderer.invoke("accounts:logout", id),
+  deleteAccount: (id) => ipcRenderer.invoke("accounts:delete", id),
+  pickMedia: (kind) => ipcRenderer.invoke("media:pick", kind),
+  sendMessage: (job) => ipcRenderer.invoke("wa:send", job),
+  checkNumber: (job) => ipcRenderer.invoke("wa:check-number", job),
+  listGroups: (accountIds) => ipcRenderer.invoke("warming:groups", accountIds),
+  sendWarmingMessage: (job) => ipcRenderer.invoke("warming:send", job),
+  readWarmingGroup: (job) => ipcRenderer.invoke("warming:read", job),
+  onAccountUpdate: (callback) => ipcRenderer.on("account:update", (_, value) => callback(value)),
+  onAccountRemoved: (callback) => ipcRenderer.on("account:removed", (_, value) => callback(value)),
+  onQr: (callback) => ipcRenderer.on("account:qr", (_, value) => callback(value)),
+  onWarmingAck: (callback) => ipcRenderer.on("warming:ack", (_, value) => callback(value)),
+  onUpdateStatus: (callback) => ipcRenderer.on("update:status", (_, value) => callback(value))
+});
