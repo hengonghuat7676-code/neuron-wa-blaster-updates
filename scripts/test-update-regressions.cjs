@@ -42,7 +42,11 @@ async function main() {
     const helperSource = source.match(/await writeFile\(script, (\[[\s\S]*?\]\.join\("\\r\\n"\)), "utf8"\);/);
     assert.ok(helperSource, 'Portable helper source must be present');
     const script = path.join(folder, 'apply update.ps1');
-    fs.writeFileSync(script, vm.runInNewContext(helperSource[1]));
+    const helperText = vm.runInNewContext(helperSource[1]);
+    assert.match(helperText, /NEURON_UPDATE_STARTUP_MARKER/);
+    assert.match(helperText, /Updated application main window is ready/);
+    assert.match(helperText, /did not show its main window/);
+    fs.writeFileSync(script, helperText);
     const powershell = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
     execFileSync(powershell, ['-NoProfile', '-NonInteractive', '-Command', '$e=$null; $t=$null; [void][System.Management.Automation.Language.Parser]::ParseFile($env:NEURON_TEST_SCRIPT,[ref]$t,[ref]$e); if($e.Count){$e | Out-String | Write-Error; exit 1}'], {
       windowsHide: true, env: { ...process.env, NEURON_TEST_SCRIPT: script }
