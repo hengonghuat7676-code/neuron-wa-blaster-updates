@@ -1,6 +1,6 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, safeStorage } from "electron";
 import { mkdir, readFile, writeFile, rename, rm } from "node:fs/promises";
-import { createWriteStream, existsSync, statSync, unlinkSync, openSync, closeSync } from "node:fs";
+import { createWriteStream, existsSync, statSync, unlinkSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
@@ -24,6 +24,7 @@ let licenseMessage = "License has not been checked.";
 let licenseExpires = "";
 let machineIdCache = "";
 let updateBusy = false;
+let updateInstalling = false;
 let activeDownload = null;
 let downloadedUpdate = null;
 let updateDownloading = false;
@@ -235,17 +236,18 @@ async function downloadUpdate(info) {
 }
 
 async function installDownloadedUpdate() {
+  if (updateInstalling) throw new Error("Update installation is already running.");
   if (updateBusy) throw new Error("An active process is running. The update cannot be installed now.");
   if (!app.isPackaged || !process.env.PORTABLE_EXECUTABLE_FILE) throw new Error("Portable updates are available only in the packaged application.");
   if (!downloadedUpdate?.path || !existsSync(downloadedUpdate.path)) throw new Error("No verified update is ready.");
   if (createHash("sha256").update(await readFile(downloadedUpdate.path)).digest("hex") !== downloadedUpdate.hash) throw new Error("Update file changed after verification. Download it again.");
-  const target = process.env.PORTABLE_EXECUTABLE_FILE;
+  const target = path.resolve(process.env.PORTABLE_EXECUTABLE_FILE);
   const script = path.join(updateFolder(), "apply-portable-update.ps1");
   const logFile = path.join(updateFolder(), "portable-update.log");
   const markerFile = path.join(updateFolder(), "portable-update-result.json");
   const readyFile = path.join(updateFolder(), `helper-ready-${randomUUID()}.txt`);
   const startupFile = path.join(updateFolder(), `app-started-${randomUUID()}.json`);
-  const startupTimeoutSeconds = 30;
+  const startupTimeoutSeconds = 90;
   const powershell = path.join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   if (!existsSync(powershell)) throw new Error("Windows PowerShell is unavailable. Install the update manually.");
   await writeFile(script, [
@@ -259,7 +261,7 @@ async function installDownloadedUpdate() {
     "$WorkDir = Split-Path -Parent $Target",
     "try {",
     "  if ((Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash -ne $ExpectedHash) { throw 'Update checksum changed before installation.' }",
-    "  Write-UpdateLog ('Starting update to ' + $Version + '. Waiting for PID ' + $OldPid)",
+    "  Write-UpdateLog ('Starting update to ' + $Version + '. Waiting for PID ' + $OldPid + '. Helper PID ' + $PID)",
     "  Set-Content -LiteralPath $ReadyFile -Value 'ready' -Encoding ASCII",
     "  Wait-Process -Id $OldPid -Timeout 60 -ErrorAction SilentlyContinue",
     "  if (Get-Process -Id $OldPid -ErrorAction SilentlyContinue) { throw 'Original application did not exit within 60 seconds.' }",
@@ -295,26 +297,39 @@ async function installDownloadedUpdate() {
     "}"
   ].join("\r\n"), "utf8");
   sendToRenderer("update:status", { stage: "installing", percent: 100 });
-  const diagnostic = openSync(path.join(updateFolder(), "portable-update-helper.log"), "a");
-  let helper;
+  updateInstalling = true;
   try {
-    helper = spawn(powershell, ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, "-OldPid", String(process.pid), "-Source", downloadedUpdate.path, "-Target", target, "-Version", downloadedUpdate.version, "-LogFile", logFile, "-MarkerFile", markerFile, "-ReadyFile", readyFile, "-StartupFile", startupFile, "-StartupTimeoutSeconds", String(startupTimeoutSeconds), "-ExpectedHash", downloadedUpdate.hash], { detached: true, stdio: ["ignore", diagnostic, diagnostic], windowsHide: true });
-  } finally { closeSync(diagnostic); }
+  const diagnosticFile = path.join(updateFolder(), "portable-update-helper.log");
+  const psLiteral = (value) => "'" + String(value).replace(/'/g, "''") + "'";
+  const argumentsList = ["-OldPid", String(process.pid), "-Source", downloadedUpdate.path, "-Target", target, "-Version", downloadedUpdate.version, "-LogFile", logFile, "-MarkerFile", markerFile, "-ReadyFile", readyFile, "-StartupFile", startupFile, "-StartupTimeoutSeconds", String(startupTimeoutSeconds), "-ExpectedHash", downloadedUpdate.hash];
+  const invocation = "& " + psLiteral(script) + " " + argumentsList.map((value, index) => index % 2 ? psLiteral(value) : value).join(" ") + " *> " + psLiteral(diagnosticFile);
+  const encoded = Buffer.from(invocation, "utf16le").toString("base64");
+  // cmd START creates an independent, hidden PowerShell console. Directly
+  // detaching powershell.exe can exit silently before executing its script.
+  const command = 'start "" /min "' + powershell + '" -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -EncodedCommand ' + encoded;
+  const helper = spawn(process.env.ComSpec || path.join(process.env.SystemRoot || "C:\\Windows", "System32", "cmd.exe"), ["/d", "/s", "/c", command], { detached: true, stdio: "ignore", windowsHide: true, windowsVerbatimArguments: true });
   await new Promise((resolve, reject) => {
     const deadline = Date.now() + 15_000;
-    const finish = (error) => { clearInterval(timer); helper.removeListener("exit", onExit); error ? reject(error) : resolve(); };
-    const onExit = (code) => finish(new Error(`Update helper exited before startup (code ${code}). See portable-update-helper.log.`));
+    let settled = false;
+    const finish = (error) => { if (settled) return; settled = true; clearInterval(timer); helper.removeListener("exit", onExit); helper.removeListener("error", onError); error ? reject(error) : resolve(); };
+    const onError = (error) => finish(error);
+    const onExit = (code) => { if (code !== 0) finish(new Error(`Update launcher exited (code ${code}). See portable-update-helper.log.`)); };
     const timer = setInterval(() => {
       if (existsSync(readyFile)) finish();
       else if (Date.now() > deadline) { helper.kill(); finish(new Error("Update helper did not become ready. See portable-update-helper.log.")); }
     }, 100);
-    helper.once("error", (error) => finish(error));
+    helper.once("error", onError);
     helper.once("exit", onExit);
   });
   await rm(readyFile, { force: true }).catch(() => {});
   helper.unref();
   setTimeout(() => app.quit(), 600);
   return true;
+  } catch (error) {
+    updateInstalling = false;
+    sendToRenderer("update:status", { stage: "error", message: error.message });
+    throw error;
+  }
 }
 
 async function machineId() {

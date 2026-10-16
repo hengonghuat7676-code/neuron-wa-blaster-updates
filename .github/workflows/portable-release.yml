@@ -35,8 +35,10 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run test:updater-regression
+      - run: npm run test:updater-helper
       - run: npm run test:ui
       - run: npm run build:portable -- --publish never
+      - run: node scripts/test-portable-transaction.mjs
       - run: npm run release:prepare
       - uses: actions/upload-artifact@v4
         with:
