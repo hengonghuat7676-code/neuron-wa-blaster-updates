@@ -450,6 +450,7 @@ function createWindow() {
 }
 
 function registerIpc() {
+  ipcMain.handle("app:version", () => app.getVersion());
   ipcMain.handle("theme:set", (_, theme) => {
     nativeTheme.themeSource = theme === "dark" ? "dark" : "light";
     return nativeTheme.shouldUseDarkColors;

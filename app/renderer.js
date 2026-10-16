@@ -1013,6 +1013,9 @@ window.neuron.onUpdateStatus((status) => {
 
 async function initialize() {
   setTheme(state.theme); renderAll(); updateComposer();
+  window.neuron.getAppVersion()
+    .then((version) => $$('[data-app-version]').forEach((element) => { element.textContent = `${element.dataset.versionPrefix || ""}${version}`; }))
+    .catch(() => $$('[data-app-version]').forEach((element) => { element.textContent = "Unavailable"; }));
   try {
     const license = await window.neuron.licenseStatus();
     applyLicenseState(license);

@@ -38,6 +38,7 @@ jobs:
       - run: npm run test:updater-helper
       - run: npm run test:ui
       - run: npm run build:portable -- --publish never
+      - run: node scripts/test-version-ui.mjs
       - run: node scripts/test-portable-transaction.mjs
       - run: npm run release:prepare
       - uses: actions/upload-artifact@v4
