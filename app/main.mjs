@@ -302,7 +302,13 @@ async function installDownloadedUpdate() {
   // cmd START creates an independent, hidden PowerShell console. Directly
   // detaching powershell.exe can exit silently before executing its script.
   const command = 'start "" /min "' + powershell + '" -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -EncodedCommand ' + encoded;
-  const helper = spawn(process.env.ComSpec || path.join(process.env.SystemRoot || "C:\\Windows", "System32", "cmd.exe"), ["/d", "/s", "/c", command], { detached: true, stdio: "ignore", windowsHide: true, windowsVerbatimArguments: true });
+  const helperEnvironment = { ...process.env };
+  // A PowerShell 7 parent can export incompatible module search paths to 5.1.
+  // Let Windows PowerShell initialize its own built-in module search paths.
+  for (const key of Object.keys(helperEnvironment)) {
+    if (key.toLowerCase() === "psmodulepath") delete helperEnvironment[key];
+  }
+  const helper = spawn(process.env.ComSpec || path.join(process.env.SystemRoot || "C:\\Windows", "System32", "cmd.exe"), ["/d", "/s", "/c", command], { detached: true, stdio: "ignore", windowsHide: true, windowsVerbatimArguments: true, env: helperEnvironment });
   await new Promise((resolve, reject) => {
     const deadline = Date.now() + 15_000;
     let settled = false;
