@@ -1,8 +1,8 @@
 # Portable release updates
 
-Source version: 3.4.4. Always build a fresh EXE from the matching source commit.
+Source version: 3.4.5. Always build a fresh EXE from the matching source commit.
 
-## Build and publish 3.4.4
+## Build and publish 3.4.5
 
 Use a Windows environment with Node.js and npm installed. From this directory:
 
@@ -10,14 +10,15 @@ Use a Windows environment with Node.js and npm installed. From this directory:
 npm run check
 npm run test:updater-regression
 npm run test:updater-helper
+npm run test:update-notifications
 npm run build:portable
 node scripts/test-portable-transaction.mjs
 npm run release:prepare
 ```
 
-Create a published, stable GitHub release tagged `v3.4.4` in
+Create a published, stable GitHub release tagged `v3.4.5` in
 `hengonghuat7676-code/neuron-wa-blaster-updates`. Upload the EXE,
-its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.4`.
+its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.5`.
 Both checksum files must refer to the same EXE. Do not mix assets from other versions.
 The preparation script rejects EXEs older than the updater source edits.
 
@@ -36,6 +37,14 @@ previous application stays open until the helper is ready. The helper only
 reports success after the updated application's main window is ready to show.
 
 ## GitHub build workflow
+
+Version 3.4.5 checks for updates once per app launch, about 1.8 seconds after UI
+initialization. The stored last-check time is diagnostic only; it never blocks a
+new startup check. There is no hourly background poll. Automatic checks show a
+modal only for a newer release; manual checks also report errors/up-to-date results.
+While any Sending, Warming or WA Filter task is active, Update Now is hidden.
+Update After Process queues a reminder after all tasks finish or pause, requiring
+another explicit Update Now click to download/install. Update Later dismisses it.
 
 Upload the source files, assets, scripts, package files, and `.github` directory
 to the repository. Do not upload user-data directories, WhatsApp sessions,

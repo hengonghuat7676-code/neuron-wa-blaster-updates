@@ -33,7 +33,6 @@ const LICENSE_OFFLINE_GRACE_MS = 72 * 60 * 60 * 1000;
 const LICENSE_SERVER_URL = "https://script.google.com/macros/s/AKfycby617kyk7nh2vS0X71UkU3P_ojpOChh0Md5aDhwDtizDPVLA6GU98JDasRMUIxgslPixg/exec";
 const UPDATE_REPOSITORY = "hengonghuat7676-code/neuron-wa-blaster-updates";
 const UPDATE_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases/latest`;
-const UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 function rememberedLicensePath() { return path.join(app.getPath("userData"), "neuron-wa-license.bin"); }
 function updateStatePath() { return path.join(app.getPath("userData"), "update-state.json"); }
@@ -83,13 +82,9 @@ function githubRequest(url, redirects = 0) {
   });
 }
 
-async function checkForUpdate(manual = false) {
+async function checkForUpdate() {
   const currentVersion = app.getVersion();
   const previous = await readUpdateState();
-  const checkedAt = Number(previous.lastCheckedAt || 0);
-  if (!manual && checkedAt && Date.now() - checkedAt < UPDATE_INTERVAL_MS) {
-    return { available: false, skipped: true, currentVersion, nextCheckAt: checkedAt + UPDATE_INTERVAL_MS };
-  }
   try {
     const response = await githubRequest(UPDATE_API);
     if (response.status === 404) {

@@ -10,8 +10,10 @@ let warmingRunner = false;
 let numberFilterRunner = false;
 let warmingGroups = [];
 let availableUpdate = null;
+let updateAfterProcess = false;
 let updateDownloading = false;
 let updateCheckTimer = null;
+let updateCheckInFlight = false;
 let lastUpdateBusy = null;
 
 const $ = (selector) => document.querySelector(selector);
@@ -38,17 +40,42 @@ function toast(message) { const el = $("#toast"); el.textContent = message; el.c
 function formatBytes(value) { const bytes = Number(value) || 0; if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
 function humanizeSeconds(value) { const seconds = Math.max(0, Number(value) || 0); if (seconds < 60) return `${Math.round(seconds)} sec`; const hours = Math.floor(seconds / 3600); const minutes = Math.round((seconds % 3600) / 60); return hours ? `${hours} hr${minutes ? ` ${minutes} min` : ""}` : `${minutes} min`; }
 function hasRunningProcess() { return state.campaigns.some((campaign) => campaign.status === "running" && campaignCounts(campaign.id).remaining > 0) || state.warming.status === "running" || state.numberFilter.status === "running"; }
-function syncUpdateBusy() { const busy = hasRunningProcess(); if (busy === lastUpdateBusy) return; lastUpdateBusy = busy; window.neuron.setUpdateBusy(busy).catch(() => {}); }
+function syncUpdateBusy() {
+  const busy = hasRunningProcess();
+  if (busy === lastUpdateBusy) return;
+  lastUpdateBusy = busy;
+  window.neuron.setUpdateBusy(busy).catch(() => {});
+  if (availableUpdate && !updateDownloading && $("#updateDialog").open) showUpdateDialog(availableUpdate);
+  if (!busy && updateAfterProcess && availableUpdate && !updateDownloading) {
+    updateAfterProcess = false;
+    showUpdateDialog(availableUpdate);
+  }
+}
+
+function closeUpdateDialog() {
+  if (updateDownloading) return;
+  updateAfterProcess = false;
+  $("#updateDialog").close();
+}
+
+function remindUpdateAfterProcess() {
+  if (!availableUpdate || updateDownloading) return;
+  if (!hasRunningProcess()) { showUpdateDialog(availableUpdate); return; }
+  updateAfterProcess = true;
+  $("#updateDialog").close();
+  toast("The update reminder will appear after all active processes finish or pause.");
+}
 
 function showUpdateDialog(info) {
   availableUpdate = info;
   const busy = hasRunningProcess();
   $("#updateTitle").textContent = "Update Available";
-  $("#updateMessage").textContent = busy ? "A process is currently running. Finish or pause it first, then check for updates again." : "A new version of Neuron WA Blaster is ready to download.";
+  $("#updateMessage").textContent = busy ? "A process is currently running. You can be reminded after all active processes finish or pause." : "A new version of Neuron WA Blaster is ready to download.";
   $("#updateDetails").innerHTML = `<div><span>Current</span><strong>${escapeHtml(info.currentVersion || "—")}</strong></div><div><span>Latest</span><strong>${escapeHtml(info.latestVersion || "—")}</strong></div><div><span>Size</span><strong>${escapeHtml(formatBytes(info.size))}</strong></div>`;
   $("#updateNotes").textContent = info.notes || "No release notes provided.";
   $("#updateProgressWrap").classList.add("hidden");
   $("#updateNow").classList.toggle("hidden", busy);
+  $("#updateAfter").classList.toggle("hidden", !busy);
   $("#updateNow").disabled = false;
   $("#updateLater").disabled = false;
   $("#updateLater").textContent = "Update Later";
@@ -56,6 +83,8 @@ function showUpdateDialog(info) {
 }
 
 async function checkForUpdates(manual = false) {
+  if (updateCheckInFlight || updateDownloading) return;
+  updateCheckInFlight = true;
   if (manual) { $("#checkUpdates").disabled = true; $("#updateSettingsStatus").textContent = "Checking GitHub for updates…"; }
   try {
     const info = await window.neuron.checkForUpdates(manual);
@@ -64,18 +93,20 @@ async function checkForUpdates(manual = false) {
     if (manual) { $("#updateSettingsStatus").textContent = "You are using the latest available version."; toast("No updates available"); }
   } catch (error) {
     if (manual) { $("#updateSettingsStatus").textContent = `Unable to check: ${errorMessage(error)}`; toast("Unable to check for updates"); }
-  } finally { if (manual) $("#checkUpdates").disabled = false; }
+  } finally { updateCheckInFlight = false; if (manual) $("#checkUpdates").disabled = false; }
 }
 
 async function beginUpdate() {
   if (!availableUpdate) return;
-  if (hasRunningProcess()) { $("#updateNow").classList.add("hidden"); $("#updateMessage").textContent = "A process is currently running. Only Update Later is available."; return; }
+  if (hasRunningProcess()) { showUpdateDialog(availableUpdate); return; }
+  updateAfterProcess = false;
   updateDownloading = true;
   $("#updateProgressWrap").classList.remove("hidden");
   $("#updateProgressLabel").textContent = "Downloading update…";
   $("#updateProgressPercent").textContent = "0%";
   $("#updateProgress").value = 0;
   $("#updateNow").disabled = true;
+  $("#updateAfter").classList.add("hidden");
   $("#updateLater").disabled = true;
   try {
     await window.neuron.downloadUpdate(availableUpdate);
@@ -93,9 +124,8 @@ async function beginUpdate() {
 }
 
 function startUpdateChecks() {
-  if (updateCheckTimer) return;
-  setTimeout(() => checkForUpdates(false), 2_000);
-  updateCheckTimer = setInterval(() => checkForUpdates(false), 60 * 60 * 1000);
+  if (updateCheckTimer !== null) return;
+  updateCheckTimer = setTimeout(() => checkForUpdates(false), 1_800);
 }
 function campaignById(id) { return state.campaigns.find((item) => item.id === id); }
 function accountById(id) { return accounts.find((item) => item.id === id); }
@@ -841,7 +871,12 @@ $("#themeToggle").onclick = () => setTheme(state.theme === "dark" ? "light" : "d
 $("#themeSelect").onchange = (event) => setTheme(event.target.value);
 $("#compactMode").onchange = (event) => { state.compact = event.target.checked; save(); };
 $("#checkUpdates").onclick = () => checkForUpdates(true);
-$("#updateLater").onclick = () => { if (!updateDownloading) $("#updateDialog").close(); };
+$("#updateLater").onclick = closeUpdateDialog;
+$("#updateAfter").onclick = remindUpdateAfterProcess;
+$("#updateDialog").addEventListener("cancel", (event) => {
+  if (updateDownloading) event.preventDefault();
+  else updateAfterProcess = false;
+});
 $("#updateNow").onclick = beginUpdate;
 $("#updateDialog").addEventListener("cancel", (event) => { if (updateDownloading) event.preventDefault(); });
 
@@ -1013,6 +1048,7 @@ window.neuron.onUpdateStatus((status) => {
 
 async function initialize() {
   setTheme(state.theme); renderAll(); updateComposer();
+  startUpdateChecks();
   window.neuron.getAppVersion()
     .then((version) => $$('[data-app-version]').forEach((element) => { element.textContent = `${element.dataset.versionPrefix || ""}${version}`; }))
     .catch(() => $$('[data-app-version]').forEach((element) => { element.textContent = "Unavailable"; }));
@@ -1025,7 +1061,6 @@ async function initialize() {
     writeConfig(campaign?.config);
     if (connectedAccounts().length) await refreshWarmingGroups(false);
   } catch (error) { applyLicenseState({ valid: false, status: "error", message: errorMessage(error) }); renderAll(); go("license"); }
-  finally { startUpdateChecks(); }
 }
 initialize();
 setInterval(() => {

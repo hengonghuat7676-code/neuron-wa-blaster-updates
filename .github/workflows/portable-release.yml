@@ -37,6 +37,7 @@ jobs:
       - run: npm run test:updater-regression
       - run: npm run test:updater-helper
       - run: npm run test:ui
+      - run: npm run test:update-notifications
       - run: npm run build:portable -- --publish never
       - run: node scripts/test-version-ui.mjs
       - run: node scripts/test-portable-transaction.mjs
