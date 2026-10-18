@@ -58,6 +58,8 @@ function askAction(message, value) {
   $("#actionTitle").textContent = editing ? "Rename" : "Confirm action";
   $("#actionMessage").textContent = message;
   $("#actionInputLabel").hidden = !editing;
+  // The existing `dialog label` CSS overrides the browser's [hidden] rule.
+  $("#actionInputLabel").style.display = editing ? "block" : "none";
   input.disabled = !editing;
   input.value = editing ? value : "";
   $("#actionAccept").textContent = editing ? "Save" : "Confirm";

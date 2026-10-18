@@ -54,7 +54,8 @@ try {
     if (phase === 'after-confirm') {
       await evaluate(`void askAction('QA confirmation')`);
       assert.equal(await evaluate(`document.querySelector('#actionDialog').open`), true);
-      await evaluate(`document.querySelector('#actionDialog').close('ok')`);
+      assert.equal(await evaluate(`getComputedStyle(document.querySelector('#actionInputLabel')).display`), 'none');
+      await evaluate(`document.querySelector('#actionAccept').click()`);
     }
     if (phase === 'after-qr') {
       await evaluate(`showQr(accounts[0]);document.querySelector('#qrDialog [data-close]').click()`);
@@ -70,6 +71,12 @@ try {
     }
     await evaluate(`document.activeElement?.blur();document.querySelectorAll('dialog[open]').forEach(d=>d.close())`);
   }
+  await evaluate(`window.qaRenameResult=null;askAction('Rename QA', 'Old name').then(value=>window.qaRenameResult=value);void 0`);
+  assert.notEqual(await evaluate(`getComputedStyle(document.querySelector('#actionInputLabel')).display`), 'none');
+  await command('Input.insertText', { text: 'New name' });
+  await evaluate(`document.querySelector('#actionAccept').click()`);
+  await new Promise(r => setTimeout(r, 50));
+  assert.equal(await evaluate('window.qaRenameResult'), 'New name', 'Rename form returns edited name');
   for (const f of fields.filter(f => f.page === 'warming' && f.type === 'number')) {
     await evaluate(`(()=>{document.activeElement?.blur();go('warming');const el=document.getElementById(${JSON.stringify(f.id)});el.focus();el.value='';})()`);
     await command('Input.insertText', { text: '73' });
