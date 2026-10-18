@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("neuron", {
   getAppVersion: () => ipcRenderer.invoke("app:version"),
+  restoreInputFocus: () => ipcRenderer.invoke("app:restore-input-focus"),
   setTheme: (theme) => ipcRenderer.invoke("theme:set", theme),
   copyText: (value) => ipcRenderer.invoke("clipboard:write", value),
   setUpdateBusy: (busy) => ipcRenderer.invoke("update:set-busy", busy),

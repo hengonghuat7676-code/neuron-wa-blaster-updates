@@ -37,6 +37,41 @@ function cleanPhone(value) { return String(value || "").replace(/\D/g, "").repla
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char])); }
 function errorMessage(error) { return error?.message || String(error || "Unknown error"); }
 function toast(message) { const el = $("#toast"); el.textContent = message; el.classList.add("show"); clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove("show"), 3400); }
+function restoreInputFocus(target) {
+  requestAnimationFrame(async () => {
+    // A different dialog or another field may have taken focus in the meantime.
+    if (document.querySelector('dialog[open]')) return;
+    await window.neuron.restoreInputFocus().catch(() => {});
+    if (document.querySelector('dialog[open]')) return;
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== target && active.matches('input, textarea, select')) return;
+    if (target?.isConnected && !target.disabled && target.getClientRects().length) target.focus({ preventScroll: true });
+  });
+}
+let actionDialogBusy = false;
+function askAction(message, value) {
+  if (actionDialogBusy) return Promise.resolve(value === undefined ? false : null);
+  actionDialogBusy = true;
+  const dialog = $("#actionDialog");
+  const input = $("#actionInput");
+  const editing = value !== undefined;
+  $("#actionTitle").textContent = editing ? "Rename" : "Confirm action";
+  $("#actionMessage").textContent = message;
+  $("#actionInputLabel").hidden = !editing;
+  input.disabled = !editing;
+  input.value = editing ? value : "";
+  $("#actionAccept").textContent = editing ? "Save" : "Confirm";
+  dialog.returnValue = "cancel";
+  return new Promise((resolve) => {
+    dialog.addEventListener("close", () => {
+      actionDialogBusy = false;
+      resolve(dialog.returnValue === "ok" ? (editing ? input.value : true) : (editing ? null : false));
+    }, { once: true });
+    dialog.showModal();
+    if (editing) { input.focus(); input.select(); }
+    else dialog.querySelector('button[value="cancel"]').focus();
+  });
+}
 function formatBytes(value) { const bytes = Number(value) || 0; if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
 function humanizeSeconds(value) { const seconds = Math.max(0, Number(value) || 0); if (seconds < 60) return `${Math.round(seconds)} sec`; const hours = Math.floor(seconds / 3600); const minutes = Math.round((seconds % 3600) / 60); return hours ? `${hours} hr${minutes ? ` ${minutes} min` : ""}` : `${minutes} min`; }
 function hasRunningProcess() { return state.campaigns.some((campaign) => campaign.status === "running" && campaignCounts(campaign.id).remaining > 0) || state.warming.status === "running" || state.numberFilter.status === "running"; }
@@ -509,14 +544,11 @@ function renderWarming() {
   $("#warmingGroupInfo").textContent = currentGroup ? `${currentGroup.participants || 0} participants · available to ${currentGroup.accountIds.length} selected/connected account(s)` : "Refresh groups to verify access for each account.";
   if (document.activeElement !== $("#warmingMessages")) $("#warmingMessages").value = warming.messages;
   $("#warmingMessageCount").textContent = `${messages.length.toLocaleString()} messages`;
-  $("#warmingMaxMessages").value = warming.maxMessages;
-  $("#warmingDelayMin").value = warming.delayMin;
-  $("#warmingDelayMax").value = warming.delayMax;
-  $("#warmingCooldownMin").value = warming.cooldownMin;
-  $("#warmingCooldownMax").value = warming.cooldownMax;
-  $("#warmingReplyChance").value = warming.replyChance;
-  $("#warmingReadChance").value = warming.readChance;
-  $("#warmingIdleRead").value = warming.idleRead;
+  const numericSettings = { warmingMaxMessages: warming.maxMessages, warmingDelayMin: warming.delayMin, warmingDelayMax: warming.delayMax, warmingCooldownMin: warming.cooldownMin, warmingCooldownMax: warming.cooldownMax, warmingReplyChance: warming.replyChance, warmingReadChance: warming.readChance, warmingIdleRead: warming.idleRead };
+  for (const [id, value] of Object.entries(numericSettings)) {
+    const input = document.getElementById(id);
+    if (document.activeElement !== input) input.value = value;
+  }
   $("#warmingAccounts").innerHTML = accounts.map((account) => {
     const campaign = accountCampaign(account.id);
     const checked = warming.accountIds.includes(account.id);
@@ -855,6 +887,19 @@ $$('.nav-item').forEach((button) => button.onclick = () => go(button.dataset.pag
 $$('[data-go]').forEach((button) => button.onclick = () => go(button.dataset.go));
 $$('[data-action="add-account"]').forEach((button) => button.onclick = () => $("#addAccount").click());
 $$('[data-close]').forEach((button) => button.onclick = () => $("#" + button.dataset.close).close());
+$$('dialog').forEach((dialog) => {
+  let returnFocus = null;
+  dialog.addEventListener("beforetoggle", (event) => {
+    if (event.newState === "open") returnFocus = document.activeElement;
+    if (event.newState === "closed" && dialog.id === "qrDialog") qrAccountId = null;
+  });
+  dialog.addEventListener("cancel", () => { if (dialog.id === "qrDialog") qrAccountId = null; });
+  dialog.addEventListener("close", () => {
+    if (dialog.open) return; // An old close event must not clear a newly opened QR.
+    if (dialog.id === "qrDialog") qrAccountId = null;
+    restoreInputFocus(returnFocus);
+  });
+});
 $("#activeProcesses").onclick = (event) => {
   const button = event.target.closest("[data-process-type]");
   if (!button) return;
@@ -912,7 +957,7 @@ $("#copyMachineIdButton").onclick = async () => { if (!licenseState.machineId) r
 
 $("#addAccount").onclick = () => { $("#newAccountName").value = `Account ${accounts.length + 1}`; $("#accountDialog").showModal(); };
 $("#saveAccount").onclick = async (event) => { event.preventDefault(); const name = $("#newAccountName").value.trim(); if (!name) return toast("Account name is required"); $("#accountDialog").close(); try { const account = await window.neuron.addAccount(name); upsertAccount(account); showQr(account); } catch (error) { toast(errorMessage(error)); } };
-$("#accountsGrid").onclick = async (event) => { const action = event.target.dataset.accountAction; if (!action) return; const id = event.target.closest(".account-card").dataset.id; const account = accountById(id); try { if (action === "connect") { showQr(account); await window.neuron.connectAccount(id); } if (action === "rename") { const name = prompt("New account name:", account.name); if (name?.trim()) upsertAccount(await window.neuron.renameAccount(id, name)); } if (action === "logout" && confirm(`Log out ${account.name}?`)) await window.neuron.logoutAccount(id); if (action === "delete" && confirm(`Delete ${account.name} and its stored session?`)) await window.neuron.deleteAccount(id); } catch (error) { toast(errorMessage(error)); } };
+$("#accountsGrid").onclick = async (event) => { const action = event.target.dataset.accountAction; if (!action) return; const id = event.target.closest(".account-card").dataset.id; const account = accountById(id); try { if (action === "connect") { showQr(account); await window.neuron.connectAccount(id); } if (action === "rename") { const name = await askAction("New account name:", account.name); if (name?.trim()) upsertAccount(await window.neuron.renameAccount(id, name)); } if (action === "logout" && await askAction(`Log out ${account.name}?`)) await window.neuron.logoutAccount(id); if (action === "delete" && await askAction(`Delete ${account.name} and its stored session?`)) await window.neuron.deleteAccount(id); } catch (error) { toast(errorMessage(error)); } };
 function upsertAccount(account) { const index = accounts.findIndex((item) => item.id === account.id); if (index >= 0) accounts[index] = account; else accounts.push(account); renderAll(); }
 function showQr(account) { qrAccountId = account.id; $("#qrTitle").textContent = `Connect ${account.name}`; $("#qrImage").style.display = "none"; $("#qrLoading").style.display = "grid"; $("#qrLoading").textContent = "Generating secure QR code…"; if (!$("#qrDialog").open) $("#qrDialog").showModal(); }
 
@@ -934,7 +979,7 @@ $("#selectAll").onchange = (event) => { const ids = new Set(visibleContacts().fi
 $("#clearSelection").onclick = () => { state.contacts.forEach((item) => { item.selected = false; }); save(); toast("Selection cleared"); };
 $("#selectBatch").onclick = () => { const quantity = readBatchQuantity(); if (!quantity) return toast("Enter a valid number to select"); let pool = state.contacts.filter((item) => !item.campaignId); state.contacts.forEach((item) => { item.selected = false; }); if ($('input[name="selectionOrder"]:checked').value === "random") pool = pool.map((value) => ({ value, sort: Math.random() })).sort((a, b) => a.sort - b.sort).map(({ value }) => value); pool.slice(0, quantity).forEach((item) => { item.selected = true; }); save(); toast(`${Math.min(quantity, pool.length)} contacts selected`); };
 $("#assignSelected").onclick = () => { const campaign = campaignById($("#assignCampaign").value); if (!campaign) return toast("Create or select a destination campaign"); const selected = state.contacts.filter((item) => item.selected && !item.campaignId); if (!selected.length) return toast("Select contacts first"); selected.forEach((item) => { item.selected = false; item.campaignId = campaign.id; item.deliveryStatus = "waiting"; }); campaign.updatedAt = Date.now(); if (campaign.status === "completed") campaign.status = "ready"; save(); toast(`${selected.length} contacts moved to ${campaign.name}`); };
-$("#clearContacts").onclick = () => { const available = state.contacts.filter((item) => !item.campaignId).length; if (confirm(`Delete all ${available} available contacts? Assigned campaign contacts will be kept.`)) { state.contacts = state.contacts.filter((item) => item.campaignId); save(); } };
+$("#clearContacts").onclick = async () => { const available = state.contacts.filter((item) => !item.campaignId).length; if (await askAction(`Delete all ${available} available contacts? Assigned campaign contacts will be kept.`)) { state.contacts = state.contacts.filter((item) => item.campaignId); save(); } };
 
 $("#processFilterNumbers").onclick = () => { const result = addFilterNumbersFromText($("#filterInput").value); $("#filterInput").value = ""; toast(`${result.added} added · ${result.invalid} invalid · ${result.duplicates} duplicates`); };
 $("#importFilterFile").onclick = () => $("#filterFileInput").click();
@@ -949,15 +994,15 @@ $("#selectRegistered").onclick = () => { state.numberFilter.items.forEach((item)
 $("#recheckRegistered").onclick = () => { if (state.numberFilter.status === "running") return toast("Pause the filter first"); const items = state.numberFilter.items.filter((item) => item.status === "registered"); if (!items.length) return toast("No registered numbers to recheck"); items.forEach((item) => { item.status = "unchecked"; item.selected = false; item.checkedBy = ""; item.checkedAt = null; item.error = ""; }); state.numberFilter.status = "ready"; state.numberFilter.pauseReason = ""; persist(); renderFilter(); toast(`${items.length.toLocaleString()} registered numbers queued for recheck`); };
 $("#retryFailedFilter").onclick = () => { if (state.numberFilter.status === "running") return toast("Pause the filter first"); const items = state.numberFilter.items.filter((item) => item.status === "failed"); if (!items.length) return toast("No failed checks to retry"); items.forEach((item) => { item.status = "unchecked"; item.error = ""; }); state.numberFilter.status = "ready"; state.numberFilter.pauseReason = ""; persist(); renderFilter(); toast(`${items.length.toLocaleString()} failed checks returned to the queue`); };
 $("#addFilteredContacts").onclick = () => { if (state.numberFilter.status === "running") return toast("Pause the filter before moving numbers"); const selected = state.numberFilter.items.filter((item) => item.status === "registered" && item.selected); if (!selected.length) return toast("Select registered numbers first"); const existing = new Set(state.contacts.map((item) => item.phone)); let added = 0; for (const item of selected) { if (existing.has(item.phone)) continue; existing.add(item.phone); state.contacts.push({ id: newId(), name: item.name || "", phone: item.phone, var1: item.var1 || "", var2: item.var2 || "", selected: false, campaignId: null, deliveryStatus: "available" }); added++; } const selectedIds = new Set(selected.map((item) => item.id)); state.numberFilter.items = state.numberFilter.items.filter((item) => !selectedIds.has(item.id)); persist(); renderContacts(); renderFilter(); renderStats(); toast(`${added.toLocaleString()} registered numbers added to Contacts and removed from Filter`); };
-$("#clearNotRegistered").onclick = () => { if (state.numberFilter.status === "running") return toast("Pause the filter first"); const count = state.numberFilter.items.filter((item) => item.status === "not_registered").length; if (!count) return toast("No unregistered numbers to clear"); if (confirm(`Delete ${count.toLocaleString()} not registered number${count === 1 ? "" : "s"} from Filter?`)) { state.numberFilter.items = state.numberFilter.items.filter((item) => item.status !== "not_registered"); persist(); renderFilter(); } };
-$("#clearAllFilter").onclick = () => { if (state.numberFilter.status === "running") return toast("Pause or stop the filter first"); if (!state.numberFilter.items.length) return toast("Filter list is already empty"); if (confirm(`Delete all ${state.numberFilter.items.length.toLocaleString()} numbers from Filter?`)) { state.numberFilter = defaultNumberFilter(); persist(); renderFilter(); renderAccounts(); renderActiveProcesses(); } };
+$("#clearNotRegistered").onclick = async () => { if (state.numberFilter.status === "running") return toast("Pause the filter first"); const count = state.numberFilter.items.filter((item) => item.status === "not_registered").length; if (!count) return toast("No unregistered numbers to clear"); if (await askAction(`Delete ${count.toLocaleString()} not registered number${count === 1 ? "" : "s"} from Filter?`)) { if (state.numberFilter.status === "running") return toast("Pause the filter first"); state.numberFilter.items = state.numberFilter.items.filter((item) => item.status !== "not_registered"); persist(); renderFilter(); } };
+$("#clearAllFilter").onclick = async () => { if (state.numberFilter.status === "running") return toast("Pause or stop the filter first"); if (!state.numberFilter.items.length) return toast("Filter list is already empty"); if (await askAction(`Delete all ${state.numberFilter.items.length.toLocaleString()} numbers from Filter?`)) { if (state.numberFilter.status === "running") return toast("Pause or stop the filter first"); state.numberFilter = defaultNumberFilter(); persist(); renderFilter(); renderAccounts(); renderActiveProcesses(); } };
 $("#startFilter").onclick = () => { const filter = state.numberFilter; const pending = filter.items.filter((item) => item.status === "unchecked"); if (!pending.length) return toast("No unchecked numbers. Use Retry Failed or Recheck Registered first."); const selected = filter.accountIds.map(accountById).filter((account) => account?.status === "connected" && !accountCampaign(account.id) && !accountWarming(account.id)); if (!selected.length) return toast("Select at least one connected and available WhatsApp session"); filter.accountIds = selected.map((account) => account.id); filter.status = "running"; filter.pauseReason = ""; persist(); renderFilter(); renderAccounts(); renderSendingPanel(); renderWarming(); renderActiveProcesses(); runNumberFilter(); };
 $("#pauseFilter").onclick = () => { if (state.numberFilter.status !== "running") return; state.numberFilter.status = "paused"; state.numberFilter.pauseReason = "Paused manually. Press Resume Filter to continue."; persist(); renderFilter(); renderAccounts(); renderActiveProcesses(); };
 $("#stopFilter").onclick = () => { if (!["running", "paused"].includes(state.numberFilter.status)) return; state.numberFilter.status = "stopped"; state.numberFilter.pauseReason = "Stopped manually. Unchecked and failed numbers remain in the Filter list."; state.numberFilter.items.forEach((item) => { if (item.status === "checking") item.status = "unchecked"; }); persist(); renderFilter(); renderAccounts(); renderSendingPanel(); renderWarming(); renderActiveProcesses(); };
 
 $("#newCampaign").onclick = openCampaignDialog; $("#createFirstCampaign").onclick = openCampaignDialog; $("#newCampaignFromContacts").onclick = openCampaignDialog;
 $("#saveCampaign").onclick = (event) => { event.preventDefault(); const name = $("#newCampaignName").value.trim(); if (!name) return toast("Campaign name is required"); if (state.campaigns.some((item) => item.name.toLowerCase() === name.toLowerCase())) return toast("Campaign name already exists"); const campaign = createCampaign(name); $("#campaignDialog").close(); $("#assignCampaign").value = campaign.id; toast("Campaign created"); };
-$("#campaignGrid").onclick = (event) => { const action = event.target.dataset.campaignAction; if (!action) return; const id = event.target.closest(".campaign-card").dataset.id; const campaign = campaignById(id); if (action === "send") { $("#sendingCampaign").value = id; writeConfig(campaign.config); renderSendingPanel(); go("sending"); } if (action === "rename") { const name = prompt("New campaign name:", campaign.name); if (name?.trim()) { campaign.name = name.trim().slice(0, 80); state.queue.filter((item) => item.campaignId === id).forEach((item) => { item.campaign = campaign.name; }); save(); } } if (action === "delete") { if (campaign.status === "running" || campaignRunners.has(id)) return toast("Pause or stop this campaign before deleting it"); const count = campaignContacts(id).length; if (confirm(`Delete ${campaign.name} and its ${count.toLocaleString()} contact${count === 1 ? "" : "s"}? Contacts in this campaign will not return to Available.`)) { const contactIds = new Set(campaignContacts(id).map((item) => item.id)); state.contacts = state.contacts.filter((item) => !contactIds.has(item.id)); state.queue = state.queue.filter((item) => item.campaignId !== id); state.campaigns = state.campaigns.filter((item) => item.id !== id); save(); toast(`${campaign.name} and ${count.toLocaleString()} contacts deleted`); } } };
+$("#campaignGrid").onclick = async (event) => { const action = event.target.dataset.campaignAction; if (!action) return; const id = event.target.closest(".campaign-card").dataset.id; const campaign = campaignById(id); if (action === "send") { $("#sendingCampaign").value = id; writeConfig(campaign.config); renderSendingPanel(); go("sending"); } if (action === "rename") { const name = await askAction("New campaign name:", campaign.name); if (name?.trim() && campaignById(id)) { campaign.name = name.trim().slice(0, 80); state.queue.filter((item) => item.campaignId === id).forEach((item) => { item.campaign = campaign.name; }); save(); } } if (action === "delete") { if (campaign.status === "running" || campaignRunners.has(id)) return toast("Pause or stop this campaign before deleting it"); const count = campaignContacts(id).length; if (await askAction(`Delete ${campaign.name} and its ${count.toLocaleString()} contact${count === 1 ? "" : "s"}? Contacts in this campaign will not return to Available.`)) { if (campaign.status === "running" || campaignRunners.has(id)) return toast("Pause or stop this campaign before deleting it"); const contactIds = new Set(campaignContacts(id).map((item) => item.id)); state.contacts = state.contacts.filter((item) => !contactIds.has(item.id)); state.queue = state.queue.filter((item) => item.campaignId !== id); state.campaigns = state.campaigns.filter((item) => item.id !== id); save(); toast(`${campaign.name} and ${count.toLocaleString()} contacts deleted`); } } };
 
 $("#sendingCampaign").onchange = () => { const campaign = campaignById($("#sendingCampaign").value); writeConfig(campaign?.config); renderSendingPanel(); };
 $("#sendingAccount").onchange = () => { const campaign = campaignById($("#sendingCampaign").value); if (campaign) { campaign.accountId = $("#sendingAccount").value || null; persist(); renderSendingPanel(); } };
@@ -995,12 +1040,12 @@ $("#startWarming").onclick = async () => {
   save(); runWarming();
 };
 $("#pauseWarming").onclick = () => { if (state.warming.status !== "running") return; state.warming.status = "paused"; state.warming.pauseReason = "Paused manually. Press Resume Warming to continue."; state.warming.nextActivityAt = 0; warmingLog("warning", "Warming paused manually."); save(); };
-$("#stopWarming").onclick = () => { if (!confirm("Stop warming and reset its message/account progress? The message bank and settings will be kept.")) return; const keep = { messages: state.warming.messages, groupId: state.warming.groupId, groupName: state.warming.groupName, accountIds: [...state.warming.accountIds], maxMessages: state.warming.maxMessages, delayMin: state.warming.delayMin, delayMax: state.warming.delayMax, cooldownMin: state.warming.cooldownMin, cooldownMax: state.warming.cooldownMax, replyChance: state.warming.replyChance, readChance: state.warming.readChance, idleRead: state.warming.idleRead }; state.warming = { ...defaultWarming(), ...keep }; save(); toast("Warming progress reset"); };
+$("#stopWarming").onclick = async () => { if (!await askAction("Stop warming and reset its message/account progress? The message bank and settings will be kept.")) return; const keep = { messages: state.warming.messages, groupId: state.warming.groupId, groupName: state.warming.groupName, accountIds: [...state.warming.accountIds], maxMessages: state.warming.maxMessages, delayMin: state.warming.delayMin, delayMax: state.warming.delayMax, cooldownMin: state.warming.cooldownMin, cooldownMax: state.warming.cooldownMax, replyChance: state.warming.replyChance, readChance: state.warming.readChance, idleRead: state.warming.idleRead }; state.warming = { ...defaultWarming(), ...keep }; save(); toast("Warming progress reset"); };
 $("#clearWarmingLog").onclick = () => { state.warming.logs = []; persist(); renderWarming(); };
 
-$("#clearHistory").onclick = () => { if (!state.history.length) return toast("History is already empty"); if (confirm(`Delete all ${state.history.length} history entries?`)) { state.history = []; save(); toast("History cleared"); } };
+$("#clearHistory").onclick = async () => { if (!state.history.length) return toast("History is already empty"); if (await askAction(`Delete all ${state.history.length} history entries?`)) { state.history = []; save(); toast("History cleared"); } };
 $("#exportHistory").onclick = () => { const csv = ["Time,Campaign,Account,Number,Status,Details", ...state.history.map((item) => [new Date(item.time).toISOString(), item.campaign, item.accountName, item.phone, item.status, item.note].map((value) => `"${String(value || "").replaceAll('"', '""')}"`).join(","))].join("\n"); const anchor = document.createElement("a"); anchor.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); anchor.download = "neuron-wa-history.csv"; anchor.click(); URL.revokeObjectURL(anchor.href); };
-$("#resetCampaignData").onclick = () => { if (confirm("Reset all contacts, campaigns, queues, warming progress, history, and display settings? WhatsApp sessions will be kept.")) { state = structuredClone(initial); persist(); setTheme("light"); renderAll(); toast("Local campaign and warming data reset"); } };
+$("#resetCampaignData").onclick = async () => { if (await askAction("Reset all contacts, campaigns, queues, warming progress, history, and display settings? WhatsApp sessions will be kept.")) { state = structuredClone(initial); persist(); setTheme("light"); renderAll(); toast("Local campaign and warming data reset"); } };
 
 window.neuron.onAccountUpdate((account) => {
   upsertAccount(account);

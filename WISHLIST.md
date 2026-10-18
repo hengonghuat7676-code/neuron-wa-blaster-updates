@@ -1,5 +1,23 @@
 # Neuron WA Blaster Wishlist
 
+## Implemented in 3.4.6 - Input focus and dialog reliability
+
+Implementation authorized on 2026-10-18. Automated regression results are recorded below; real-user Windows validation remains separate.
+
+- [x] Replace all native confirm/prompt dialogs with asynchronous in-app dialogs and restore content focus after close without stealing OS activation.
+- [x] Preserve all eight Warming numeric drafts during render/account-status updates.
+- [x] Clear QR tracking on close/cancel/Escape and ignore stale close events after reopening.
+- [x] Add isolated regression tests: 26 editable fields across four phases, all eight numeric drafts, campaign delete/cancel, QR close and Escape.
+- [ ] Verify the originally reported freeze with physical Windows keyboard input after Delete Campaign, logout, QR scan/close and native file pickers on the user's updated installation; automated CDP tests alone do not certify these paths.
+
+## Implemented in 3.4.6 - Clean WhatsApp sessions after logout
+
+- [x] Clean the affected account's session after manual Logout and confirmed WhatsApp logout/unlink (401).
+- [x] Serialize lifecycle operations, drain pending authentication writes, cancel reconnects and invalidate stale socket callbacks before reset/new pairing.
+- [x] Preserve account entries, other sessions and application data. Keep authentication on temporary disconnects and access-denied responses that do not prove logout.
+- [x] Add synthetic regression tests for manual/remote logout, pending writes, stale callbacks, retry cancellation, account isolation and restart.
+- [ ] Verify real phone unlink and fresh QR pairing using an authorized test account; synthetic tests do not perform a live WhatsApp login.
+
 ## Updater fixes in 3.4.1
 
 - [x] Reject checksums naming a different EXE and prefer version-specific release assets.

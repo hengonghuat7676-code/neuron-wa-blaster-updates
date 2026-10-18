@@ -1,6 +1,6 @@
 {
   "name": "neuron-wa-blaster",
-  "version": "3.4.5",
+  "version": "3.4.6",
   "description": "Neuron WA Blaster - desktop campaign manager for WhatsApp Web",
   "main": "app/main.mjs",
   "author": "Neuron",
@@ -11,6 +11,8 @@
     "check": "node --check app/main.mjs && node --check app/preload.cjs && node --check app/renderer.js && node --check app/wa-manager.mjs",
     "test:qr": "node scripts/smoke-qr.mjs",
     "test:ui": "node scripts/test-ui-contract.mjs",
+    "test:input-dialogs": "node scripts/test-input-dialogs.mjs",
+    "test:session-cleanup": "node scripts/test-session-cleanup.mjs",
     "test:warming": "node scripts/test-warming-engine.mjs",
     "test:cta": "node scripts/test-hero-cta-contract.mjs",
     "test:runtime": "node scripts/test-runtime.mjs",

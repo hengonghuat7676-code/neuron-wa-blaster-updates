@@ -452,6 +452,11 @@ function createWindow() {
 
 function registerIpc() {
   ipcMain.handle("app:version", () => app.getVersion());
+  ipcMain.handle("app:restore-input-focus", (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    // Never activate the app over another program; only refocus its content.
+    if (window && !window.isDestroyed() && window.isFocused()) event.sender.focus();
+  });
   ipcMain.handle("theme:set", (_, theme) => {
     nativeTheme.themeSource = theme === "dark" ? "dark" : "light";
     return nativeTheme.shouldUseDarkColors;
