@@ -1,8 +1,8 @@
 # Portable release updates
 
-Source version: 3.4.6. Always build a fresh EXE from the matching source commit.
+Source version: 3.4.7. Always build a fresh EXE from the matching source commit.
 
-## Build and publish 3.4.6
+## Build and publish 3.4.7
 
 Use a Windows environment with Node.js and npm installed. From this directory:
 
@@ -18,9 +18,9 @@ node scripts/test-portable-transaction.mjs
 npm run release:prepare
 ```
 
-Create a published, stable GitHub release tagged `v3.4.6` in
+Create a published, stable GitHub release tagged `v3.4.7` in
 `hengonghuat7676-code/neuron-wa-blaster-updates`. Upload the EXE,
-its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.6`.
+its `.exe.sha256` file and `SHA256SUMS.txt` from `release-assets/v3.4.7`.
 Both checksum files must refer to the same EXE. Do not mix assets from other versions.
 The preparation script rejects EXEs older than the updater source edits.
 

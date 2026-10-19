@@ -49,8 +49,6 @@ export class WhatsAppManager {
     this.accounts = [];
     this.connections = new Map();
     this.reconnectAttempts = new Map();
-    this.reconnectTimers = new Map();
-    this.accountTasks = new Map();
     this.closing = false;
   }
 
@@ -59,7 +57,6 @@ export class WhatsAppManager {
     await fs.mkdir(this.dataDir, { recursive: true });
     try { this.accounts = JSON.parse(await fs.readFile(this.accountsFile, "utf8")); } catch { this.accounts = []; }
     for (const account of this.accounts) {
-      if (account.status === "logged_out") continue;
       account.status = "connecting";
       this.connect(account.id).catch(() => this.setStatus(account.id, "disconnected"));
     }
@@ -112,65 +109,18 @@ export class WhatsAppManager {
   }
 
   async connect(id, forceQr = false) {
-    return this.withAccountLock(id, () => this.connectSession(id, forceQr));
-  }
-
-  withAccountLock(id, task) {
-    const previous = this.accountTasks.get(id) || Promise.resolve();
-    const next = previous.catch(() => {}).then(task);
-    this.accountTasks.set(id, next);
-    next.finally(() => { if (this.accountTasks.get(id) === next) this.accountTasks.delete(id); }).catch(() => {});
-    return next;
-  }
-
-  sessionDirectory(id) {
-    if (!/^[A-Za-z0-9_-]+$/.test(id)) throw new Error("Invalid account session ID");
-    const root = path.resolve(this.dataDir);
-    const target = path.resolve(root, id);
-    if (path.dirname(target) !== root) throw new Error("Invalid account session path");
-    return target;
-  }
-
-  cancelReconnect(id) {
-    const retry = this.reconnectTimers.get(id);
-    if (retry?.timer) clearTimeout(retry.timer);
-    this.reconnectTimers.delete(id);
-  }
-
-  async disposeConnection(id, reason) {
-    this.cancelReconnect(id);
-    const holder = this.connections.get(id);
-    this.connections.delete(id); // Invalidate callbacks before ending the old socket.
-    if (!holder) return;
-    holder.closed = true;
-    this.rejectPendingAcks(holder, reason);
-    for (const delayed of holder.delayedWarmingAcks?.values?.() || []) clearTimeout(delayed.timer);
-    try { holder.socket?.end?.(new Error(reason)); } catch {}
-    await holder.authWrites?.catch(() => {});
-  }
-
-  async clearSession(id, reason = "Session reset") {
-    const directory = this.sessionDirectory(id);
-    await this.disposeConnection(id, reason);
-    this.reconnectAttempts.delete(id);
-    await fs.rm(directory, { recursive: true, force: true });
-    this.emit("account:qr", { id, dataUrl: null });
-  }
-
-  async connectSession(id, forceQr = false) {
     const account = this.accounts.find((item) => item.id === id);
     if (!account) throw new Error("Account not found");
     const existing = this.connections.get(id);
     if (existing?.socket && account.status === "connected") return this.publicAccount(account);
     if (existing?.connecting) return this.publicAccount(account);
 
-    const authDir = this.sessionDirectory(id);
-    this.cancelReconnect(id);
-    if (forceQr || account.status === "logged_out") {
-      await this.clearSession(id);
+    const authDir = path.join(this.dataDir, id);
+    if (forceQr) {
+      try { existing?.socket?.end?.(new Error("Session reset")); } catch {}
+      this.connections.delete(id);
+      await fs.rm(authDir, { recursive: true, force: true });
       account.phone = "";
-    } else if (existing) {
-      await this.disposeConnection(id, "Reconnecting");
     }
 
     await fs.mkdir(authDir, { recursive: true });
@@ -181,23 +131,12 @@ export class WhatsAppManager {
       pendingAcks: new Map(),
       ackStatuses: new Map(),
       delayedWarmingAcks: new Map(),
-      recentGroupMessages: new Map(),
-      authWrites: Promise.resolve()
+      recentGroupMessages: new Map()
     };
     this.connections.set(id, holder);
     await this.setStatus(id, "connecting");
 
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
-    const queueAuthWrite = (write) => {
-      if (holder.closed || this.connections.get(id) !== holder) return Promise.resolve();
-      const pending = holder.authWrites.catch(() => {}).then(async () => {
-        if (!holder.closed && this.connections.get(id) === holder) await write();
-      });
-      holder.authWrites = pending;
-      return pending;
-    };
-    const setKeys = state.keys.set.bind(state.keys);
-    state.keys.set = (data) => queueAuthWrite(() => setKeys(data));
     let protocolVersion;
     try { protocolVersion = (await fetchLatestBaileysVersion()).version; } catch {}
     const socket = makeWASocket({
@@ -218,11 +157,8 @@ export class WhatsAppManager {
     });
     holder.socket = socket;
     holder.connecting = false;
-    socket.ev.on("creds.update", () => {
-      queueAuthWrite(saveCreds).catch((error) => logger.error({ err: error }, "Unable to save session credentials"));
-    });
+    socket.ev.on("creds.update", saveCreds);
     socket.ev.on("messages.update", (updates) => {
-      if (this.connections.get(id) !== holder) return;
       for (const { key, update } of updates || []) {
         const messageId = key?.id;
         const status = Number(update?.status);
@@ -244,7 +180,6 @@ export class WhatsAppManager {
       }
     });
     socket.ev.on("messages.upsert", ({ messages }) => {
-      if (this.connections.get(id) !== holder) return;
       for (const message of messages || []) {
         const jid = message?.key?.remoteJid;
         if (!jid?.endsWith("@g.us") || message.key.fromMe || !message.message) continue;
@@ -255,12 +190,9 @@ export class WhatsAppManager {
       }
     });
     socket.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
-      if (this.closing || this.connections.get(id) !== holder) return;
       if (qr) {
         const dataUrl = await QRCode.toDataURL(qr, { width: 360, margin: 2, color: { dark: "#071a33", light: "#ffffff" } });
-        if (this.connections.get(id) !== holder) return;
         await this.setStatus(id, "qr");
-        if (this.connections.get(id) !== holder) return;
         this.emit("account:qr", { id, dataUrl });
       }
       if (connection === "open") {
@@ -274,57 +206,44 @@ export class WhatsAppManager {
           lastDisconnectReason: "",
           lastDisconnectCode: null
         });
-        if (this.connections.get(id) !== holder) return;
         this.emit("account:qr", { id, dataUrl: null });
       }
-      if (connection === "close") await this.handleConnectionClose(id, holder, lastDisconnect);
+      if (connection === "close" && !this.closing) {
+        if (this.connections.get(id) !== holder) return;
+        this.rejectPendingAcks(holder, "WhatsApp disconnected before confirming the message");
+        const { code, reason } = disconnectDetails(lastDisconnect);
+        const loggedOut = [DisconnectReason.loggedOut, DisconnectReason.forbidden, 401, 403].includes(code);
+        this.connections.delete(id);
+        await this.setStatus(id, loggedOut ? "logged_out" : "reconnecting", {
+          lastDisconnectReason: reason,
+          lastDisconnectCode: code,
+          nextReconnectAt: null
+        });
+        if (!loggedOut && this.accounts.some((item) => item.id === id)) {
+          this.scheduleReconnect(id, reason);
+        }
+      }
     });
     return this.publicAccount(account);
   }
 
-  async handleConnectionClose(id, holder, lastDisconnect) {
-    return this.withAccountLock(id, async () => {
-      if (this.closing || this.connections.get(id) !== holder) return;
-      const { code, reason } = disconnectDetails(lastDisconnect);
-      const loggedOut = code === DisconnectReason.loggedOut || code === 401;
-      const forbidden = code === DisconnectReason.forbidden || code === 403;
-      if (loggedOut) await this.clearSession(id, reason);
-      else await this.disposeConnection(id, "WhatsApp disconnected before confirming the message");
-      await this.setStatus(id, loggedOut ? "logged_out" : forbidden ? "disconnected" : "reconnecting", {
-        ...(loggedOut ? { phone: "", reconnectAttempt: 0 } : {}),
-        lastDisconnectReason: reason,
-        lastDisconnectCode: code,
-        nextReconnectAt: null
-      });
-      if (!loggedOut && !forbidden && this.accounts.some((item) => item.id === id)) {
-        await this.scheduleReconnect(id, reason);
-      }
-    });
-  }
-
   async scheduleReconnect(id, reason = "Connection closed") {
     if (this.closing || !this.accounts.some((item) => item.id === id)) return;
-    this.cancelReconnect(id);
-    const retry = { timer: null };
-    this.reconnectTimers.set(id, retry);
     const attempt = (this.reconnectAttempts.get(id) || 0) + 1;
     this.reconnectAttempts.set(id, attempt);
     const waitMs = Math.min(RECONNECT_MAX_MS, RECONNECT_BASE_MS * (2 ** Math.min(attempt - 1, 5)));
     const nextReconnectAt = Date.now() + waitMs;
     await this.setStatus(id, "reconnecting", { reconnectAttempt: attempt, nextReconnectAt, lastDisconnectReason: reason });
-    if (this.reconnectTimers.get(id) !== retry) return;
-    retry.timer = setTimeout(async () => {
-      if (this.closing || this.reconnectTimers.get(id) !== retry || !this.accounts.some((item) => item.id === id)) return;
-      await this.withAccountLock(id, async () => {
-        if (this.closing || this.reconnectTimers.get(id) !== retry) return;
-        try { await this.connectSession(id); }
-        catch (error) {
-          await this.disposeConnection(id, "Reconnect failed");
-          if (!this.closing) await this.scheduleReconnect(id, error?.message || reason);
-        }
-      }).catch((error) => logger.error({ err: error }, "Reconnect failed"));
+    const timer = setTimeout(async () => {
+      if (this.closing || !this.accounts.some((item) => item.id === id)) return;
+      try {
+        await this.connect(id);
+      } catch (error) {
+        this.connections.delete(id);
+        await this.scheduleReconnect(id, error?.message || reason);
+      }
     }, waitMs);
-    retry.timer.unref?.();
+    timer.unref?.();
   }
 
   async rename(id, name) {
@@ -337,28 +256,25 @@ export class WhatsAppManager {
   }
 
   async logout(id) {
-    return this.withAccountLock(id, async () => {
-      this.sessionDirectory(id);
-      const holder = this.connections.get(id);
-      this.cancelReconnect(id);
-      // Detach immediately so logout-triggered callbacks cannot reconnect or save credentials.
-      if (holder) { holder.closed = true; this.connections.delete(id); }
-      try { await holder?.socket?.logout(); } catch {}
-      if (holder) this.connections.set(id, holder);
-      await this.clearSession(id, "Logged out");
-      await this.setStatus(id, "logged_out", { phone: "", reconnectAttempt: 0, nextReconnectAt: null, lastDisconnectReason: "", lastDisconnectCode: null });
-      return true;
-    });
+    const holder = this.connections.get(id);
+    try { await holder?.socket?.logout(); } catch {}
+    try { holder?.socket?.end?.(new Error("Logged out")); } catch {}
+    this.connections.delete(id);
+    await fs.rm(path.join(this.dataDir, id), { recursive: true, force: true });
+    await this.setStatus(id, "logged_out", { phone: "" });
+    return true;
   }
 
   async remove(id) {
-    return this.withAccountLock(id, async () => {
-      await this.clearSession(id, "Account removed");
-      this.accounts = this.accounts.filter((item) => item.id !== id);
-      await this.persist();
-      this.emit("account:removed", { id });
-      return true;
-    });
+    const holder = this.connections.get(id);
+    try { holder?.socket?.end?.(new Error("Account removed")); } catch {}
+    if (holder?.reconnectTimer) clearTimeout(holder.reconnectTimer);
+    this.connections.delete(id);
+    this.accounts = this.accounts.filter((item) => item.id !== id);
+    await this.persist();
+    await fs.rm(path.join(this.dataDir, id), { recursive: true, force: true });
+    this.emit("account:removed", { id });
+    return true;
   }
 
   socketFor(id) {
@@ -570,7 +486,6 @@ export class WhatsAppManager {
 
   shutdown() {
     this.closing = true;
-    for (const id of this.reconnectTimers.keys()) this.cancelReconnect(id);
     for (const holder of this.connections.values()) {
       if (holder.reconnectTimer) clearTimeout(holder.reconnectTimer);
       this.rejectPendingAcks(holder, "Application closed before WhatsApp confirmed the message");

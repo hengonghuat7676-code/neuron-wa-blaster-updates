@@ -20,7 +20,7 @@ let socket;
 try {
   let target;
   for (let i = 0; i < 150; i++) {
-    try { target = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find(t => t.type === 'page'); } catch {}
+    try { target = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find(t => t.type === 'page' && t.url?.startsWith('file:') && t.url.endsWith('/app/index.html')); } catch {}
     if (target) break;
     await new Promise(resolve => setTimeout(resolve, 100));
   }

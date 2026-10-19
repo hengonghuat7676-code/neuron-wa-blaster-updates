@@ -1,5 +1,12 @@
 # Neuron WA Blaster Wishlist
 
+## 3.4.7 - Restore the 3.4.5 Account/session implementation (2026-10-19)
+
+- [x] Restore the entire `app/wa-manager.mjs` exactly to 3.4.5 commit `6022460`; no new sending/session mechanisms. This reverts items 5-11 discussed with the user, including queued authentication writes, lifecycle locks, socket cleanup/callback guards, reconnect changes, automatic remote-logout cleanup, 403 handling and startup handling of logged-out accounts.
+- [x] Retain the 3.4.6 input/dialog focus, QR-dialog tracking and Warming numeric-draft UI fixes. Keep the updater installation transaction unchanged.
+- [x] Adjust session regression tests to enforce exact 3.4.5 source parity and the restored manual-logout behavior rather than requiring the reverted 3.4.6 mechanisms.
+- [ ] Validate behavior on the user's real installation. This rollback does not prove the cause of WhatsApp restrictions or guarantee against restrictions/bans.
+
 ## Implemented in 3.4.6 - Input focus and dialog reliability
 
 Implementation authorized on 2026-10-18. Automated regression results are recorded below; real-user Windows validation remains separate.
@@ -10,7 +17,9 @@ Implementation authorized on 2026-10-18. Automated regression results are record
 - [x] Add isolated regression tests: 26 editable fields across four phases, all eight numeric drafts, campaign delete/cancel, QR close and Escape.
 - [ ] Verify the originally reported freeze with physical Windows keyboard input after Delete Campaign, logout, QR scan/close and native file pickers on the user's updated installation; automated CDP tests alone do not certify these paths.
 
-## Implemented in 3.4.6 - Clean WhatsApp sessions after logout
+## Historical: 3.4.6 session changes - reverted in 3.4.7
+
+The items below describe 3.4.6 only. They are not the behavior of 3.4.7; automatic remote-logout cleanup is deferred again as part of the authorized full session rollback.
 
 - [x] Clean the affected account's session after manual Logout and confirmed WhatsApp logout/unlink (401).
 - [x] Serialize lifecycle operations, drain pending authentication writes, cancel reconnects and invalidate stale socket callbacks before reset/new pairing.
