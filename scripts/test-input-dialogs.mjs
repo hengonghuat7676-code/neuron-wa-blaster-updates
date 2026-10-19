@@ -48,7 +48,20 @@ try {
     if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
     return r.result.value;
   }
-  await evaluate(`(async()=>{for(let i=0;i<200;i++){if(typeof askAction==='function'&&document.readyState==='complete'&&licenseState.status!=='checking')break;await new Promise(r=>setTimeout(r,50));}if(licenseState.status==='checking')throw new Error('Initialization not complete');clearTimeout(updateCheckTimer);licenseState.valid=true;state=structuredClone(initial);accounts=[{id:'qa',name:'QA',phone:'60000000000',status:'connected'}];state.campaigns=[{id:'qa-campaign',name:'QA Campaign',status:'ready',config:defaultConfig()}];renderAll();go('contacts');})()`);
+  // Poll from Node, not inside the initial page context: Electron can still
+  // replace about:blank after its target URL has changed to index.html.
+  let ready = false;
+  for (let attempt = 0; attempt < 200; attempt++) {
+    try {
+      ready = await evaluate(`document.readyState==='complete' && typeof askAction==='function' && typeof licenseState!=='undefined' && licenseState.status!=='checking'`);
+    } catch (error) {
+      if (!/Execution context was destroyed|Cannot find context|Cannot access .* before initialization/.test(error.message)) throw error;
+    }
+    if (ready) break;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  assert.ok(ready, 'Renderer initialization complete before fixtures and input tests');
+  await evaluate(`(()=>{clearTimeout(updateCheckTimer);licenseState.valid=true;state=structuredClone(initial);accounts=[{id:'qa',name:'QA',phone:'60000000000',status:'connected'}];state.campaigns=[{id:'qa-campaign',name:'QA Campaign',status:'ready',config:defaultConfig()}];renderAll();go('contacts');})()`);
   const fields = await evaluate(`[...document.querySelectorAll('input[id],textarea[id]')].filter(e=>['text','number','textarea'].includes(e.type)&&!e.readOnly&&!['licenseKeyInput','actionInput'].includes(e.id)).map(e=>({id:e.id,type:e.type,page:e.closest('.page')?.id.replace('page-',''),dialog:e.closest('dialog')?.id}))`);
   for (const phase of ['baseline', 'after-confirm', 'after-qr', 'after-account-updates']) {
     if (phase === 'after-confirm') {
