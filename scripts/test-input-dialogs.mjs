@@ -119,6 +119,39 @@ try {
   await command('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
   await new Promise(r => setTimeout(r, 50));
   assert.equal(await evaluate('qrAccountId'), null);
+  // Contacts pagination/export use only synthetic data in this isolated profile.
+  await evaluate(`(()=>{go('contacts');document.querySelector('#contactSearch').value='';document.querySelector('#contactView').value='available';contactPage=1;state.contacts=Array.from({length:3712},(_,i)=>({id:'page-'+i,name:'Contact '+i,phone:String(65000000000+i),campaignId:null,selected:false,deliveryStatus:'available'}));renderContacts();})()`);
+  const pageSnapshot = () => evaluate(`({page:contactPage,rows:document.querySelectorAll('#contactsBody tr').length,first:document.querySelector('.contact-check')?.dataset.id,last:[...document.querySelectorAll('.contact-check')].at(-1)?.dataset.id,previousDisabled:document.querySelector('#contactsPrevious').disabled,nextDisabled:document.querySelector('#contactsNext').disabled,info:document.querySelector('#contactPageInfo').textContent})`);
+  let page = await pageSnapshot();
+  assert.equal(page.rows, 1000); assert.equal(page.first, 'page-0'); assert.equal(page.previousDisabled, true);
+  await evaluate(`document.querySelector('.contact-check').click();document.querySelector('#contactsNext').click()`);
+  page = await pageSnapshot();
+  assert.equal(page.page, 2); assert.equal(page.first, 'page-1000'); assert.equal(page.last, 'page-1999');
+  await evaluate(`document.querySelector('#selectAll').click();document.querySelector('#contactsPrevious').click()`);
+  assert.equal(await evaluate(`state.contacts.filter(c=>c.selected).length`), 1001, 'Select All applies only to current page and retains earlier selection');
+  assert.equal(await evaluate(`document.querySelector('.contact-check').checked`), true);
+  await evaluate(`document.querySelector('#contactsNext').click();document.querySelector('#contactsNext').click()`);
+  page = await pageSnapshot(); assert.equal(page.first, 'page-2000'); assert.equal(page.rows, 1000);
+  await evaluate(`document.querySelector('#contactsNext').click()`);
+  page = await pageSnapshot();
+  assert.equal(page.rows, 712); assert.equal(page.first, 'page-3000'); assert.equal(page.last, 'page-3711'); assert.equal(page.nextDisabled, true);
+  assert.match(page.info, /Page 4 of 4/);
+  await evaluate(`state.contacts=state.contacts.slice(0,1001);renderContacts()`);
+  page = await pageSnapshot(); assert.equal(page.page, 2); assert.equal(page.rows, 1);
+  await evaluate(`document.querySelector('#contactSearch').value='no match';document.querySelector('#contactSearch').dispatchEvent(new Event('input'))`);
+  page = await pageSnapshot(); assert.equal(page.page, 1); assert.equal(page.rows, 0); assert.equal(page.nextDisabled, true); assert.equal(page.previousDisabled, true);
+  await evaluate(`document.querySelector('#contactSearch').value='';document.querySelector('#contactSearch').dispatchEvent(new Event('input'));document.querySelector('#batchQuantity').value='1001';document.querySelector('#selectBatch').click()`);
+  assert.equal(await evaluate(`state.contacts.filter(c=>c.selected).length`), 1001, 'Batch selection remains cross-page');
+  await evaluate(`(()=>{state.contacts=Array.from({length:5000},(_,i)=>({id:'export-'+i,name:'Export '+i,phone:String(65000000000+i),campaignId:i>=4000?'assigned':null,selected:i===0,deliveryStatus:i>=4000?'waiting':'available'}));contactPage=4;renderContacts();document.querySelector('#contactSearch').value='Export 0';document.querySelector('#contactSearch').dispatchEvent(new Event('input'));})()`);
+  // Capture the actual download Blob without writing into any user Downloads folder.
+  const exported = await evaluate(`(async()=>{const original=HTMLAnchorElement.prototype.click;const originalUrl=URL.createObjectURL;let captured,blob;const before=JSON.stringify(state.contacts);URL.createObjectURL=function(value){blob=value;return originalUrl.call(URL,value);};HTMLAnchorElement.prototype.click=function(){captured={url:this.href,name:this.download};};try{document.querySelector('#exportContacts').click();const text=await blob.text();const expected=state.contacts.map(c=>c.phone).join('\\r\\n')+'\\r\\n';return {name:captured.name,count:text.trimEnd().split('\\r\\n').length,exact:text===expected,unchanged:before===JSON.stringify(state.contacts),visible:document.querySelectorAll('#contactsBody tr').length};}finally{HTMLAnchorElement.prototype.click=original;URL.createObjectURL=originalUrl;}})()`);
+  assert.equal(exported.name, 'neuron-wa-contacts.txt'); assert.equal(exported.count, 5000); assert.equal(exported.exact, true); assert.equal(exported.unchanged, true); assert.equal(exported.visible, 1);
+  await evaluate(`state.contacts=[];renderContacts()`);
+  assert.equal(await evaluate(`document.querySelector('#exportContacts').disabled`), true);
+  await command('Emulation.setDeviceMetricsOverride', { width: 1120, height: 768, deviceScaleFactor: 1, mobile: false });
+  const exportLayout = await evaluate(`(()=>{const r=document.querySelector('#exportContacts').getBoundingClientRect();return {left:r.left,right:r.right,width:innerWidth};})()`);
+  assert.ok(exportLayout.left >= 0 && exportLayout.right <= exportLayout.width, 'Export button fits minimum supported viewport');
+  console.log('PASS Contacts: 3712 rows across four pages, boundary clamping, search reset, selection retention/page scope, cross-page batch, and exact 5000-number TXT export including assigned/hidden contacts without mutation');
   console.log(`PASS input/dialog regression: ${fields.length} fields x 4 phases, 8 Warming drafts, real async delete/cancel, QR close and Escape. CDP input, not a physical-keyboard certification.`);
 } finally {
   socket?.close();

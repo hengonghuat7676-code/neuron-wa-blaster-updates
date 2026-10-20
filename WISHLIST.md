@@ -1,5 +1,12 @@
 # Neuron WA Blaster Wishlist
 
+## 3.4.8 - Contacts pagination and Export All TXT (2026-10-20)
+
+- [x] Show up to 1000 contacts per page with Previous/Next, page count and visible range. Reset to page 1 on search/view changes and clamp the page after data shrinks.
+- [x] Preserve selections across pages; the table-header checkbox selects available contacts on the current page. Number to select remains cross-page.
+- [x] Export All Contacts (TXT): every stored contact number, including assigned contacts, one per line, regardless of search, selection or page. Do not remove/change contacts.
+- [x] Add isolated regression coverage using 3712/5000 synthetic contacts. No changes to Account/session, Sending, CTA, delays or updater installation code.
+
 ## 3.4.7 - Restore the 3.4.5 Account/session implementation (2026-10-19)
 
 - [x] Restore the entire `app/wa-manager.mjs` exactly to 3.4.5 commit `6022460`; no new sending/session mechanisms. This reverts items 5-11 discussed with the user, including queued authentication writes, lifecycle locks, socket cleanup/callback guards, reconnect changes, automatic remote-logout cleanup, 403 handling and startup handling of logged-out accounts.

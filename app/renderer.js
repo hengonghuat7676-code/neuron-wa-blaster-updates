@@ -3,6 +3,8 @@ const defaultNumberFilter = () => ({ items: [], accountIds: [], accountProgress:
 const initial = { contacts: [], campaigns: [], queue: [], history: [], warming: defaultWarming(), numberFilter: defaultNumberFilter(), theme: "light", compact: false, importStats: { invalid: 0, duplicates: 0 } };
 let state = loadState();
 let accounts = [];
+const CONTACT_PAGE_SIZE = 1000;
+let contactPage = 1;
 let qrAccountId = null;
 let licenseState = { valid: false, status: "checking", message: "Checking license…", machineId: "", deviceName: "", expires: "" };
 const campaignRunners = new Set();
@@ -322,6 +324,29 @@ function visibleContacts() {
   const view = $("#contactView").value;
   return state.contacts.filter((contact) => (view === "all" || !contact.campaignId) && `${contact.name} ${contact.phone}`.toLowerCase().includes(query));
 }
+function contactPageRows(allRows = visibleContacts()) {
+  const pages = Math.max(1, Math.ceil(allRows.length / CONTACT_PAGE_SIZE));
+  contactPage = Math.max(1, Math.min(contactPage, pages));
+  return allRows.slice((contactPage - 1) * CONTACT_PAGE_SIZE, contactPage * CONTACT_PAGE_SIZE);
+}
+function changeContactPage(offset) {
+  contactPage += offset;
+  renderContacts();
+  $("#contactSearch").scrollIntoView({ block: "center" });
+}
+function exportAllContacts() {
+  if (!state.contacts.length) return toast("No contacts to export");
+  const text = state.contacts.map((contact) => contact.phone).join("\r\n") + "\r\n";
+  const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "neuron-wa-contacts.txt";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast(`${state.contacts.length.toLocaleString()} contact numbers exported`);
+}
 function readBatchQuantity() {
   const raw = $("#batchQuantity").value.trim();
   if (!raw) return null;
@@ -335,15 +360,21 @@ function updateBatchButton() {
 }
 function renderContacts() {
   const allRows = visibleContacts();
-  const rows = allRows.slice(0, 1000);
+  const rows = contactPageRows(allRows);
   $("#contactsBody").innerHTML = rows.map((contact) => {
     const campaign = campaignById(contact.campaignId);
     const available = !contact.campaignId;
     return `<tr><td><input class="contact-check" type="checkbox" data-id="${contact.id}" ${contact.selected ? "checked" : ""} ${available ? "" : "disabled"}></td><td>${escapeHtml(contact.name || "Unnamed")}</td><td>${escapeHtml(contact.phone)}</td><td>${escapeHtml(campaign?.name || "—")}</td><td><span class="badge ${contact.deliveryStatus}">${escapeHtml(contact.deliveryStatus)}</span></td><td>${available ? `<button class="danger-text delete-contact" data-id="${contact.id}">Delete</button>` : "Assigned"}</td></tr>`;
   }).join("");
   $("#contactsEmpty").style.display = allRows.length ? "none" : "block";
-  $("#contactsEmpty").textContent = allRows.length > rows.length ? `Showing the first ${rows.length.toLocaleString()} of ${allRows.length.toLocaleString()} matching contacts. Use search to narrow the list.` : "No contacts in this view.";
-  $("#contactsEmpty").style.display = allRows.length > rows.length || !allRows.length ? "block" : "none";
+  $("#contactsEmpty").textContent = "No contacts in this view.";
+  const pages = Math.max(1, Math.ceil(allRows.length / CONTACT_PAGE_SIZE));
+  const first = allRows.length ? (contactPage - 1) * CONTACT_PAGE_SIZE + 1 : 0;
+  const last = first ? first + rows.length - 1 : 0;
+  $("#contactPageInfo").textContent = `Page ${contactPage.toLocaleString()} of ${pages.toLocaleString()} · Showing ${first.toLocaleString()}–${last.toLocaleString()} of ${allRows.length.toLocaleString()} contacts`;
+  $("#contactsPrevious").disabled = contactPage <= 1;
+  $("#contactsNext").disabled = contactPage >= pages;
+  $("#exportContacts").disabled = !state.contacts.length;
   const available = state.contacts.filter((item) => !item.campaignId);
   const selected = available.filter((item) => item.selected);
   $("#contactTotal").textContent = state.contacts.length.toLocaleString();
@@ -968,7 +999,10 @@ $("#saveContact").onclick = (event) => { event.preventDefault(); const phone = c
 $("#processContacts").onclick = () => { const result = addContactsFromText($("#bulkContacts").value); $("#bulkContacts").value = ""; toast(`${result.added} added · ${result.invalid} invalid · ${result.duplicates} duplicates`); };
 $("#importCsv").onclick = () => $("#csvInput").click();
 $("#csvInput").onchange = async (event) => { const text = await event.target.files[0]?.text(); event.target.value = ""; if (!text) return; const result = addContactsFromText(text); toast(`${result.added} imported · ${result.invalid} invalid · ${result.duplicates} duplicates`); };
-$("#contactSearch").oninput = renderContacts; $("#contactView").onchange = renderContacts;
+$("#contactSearch").oninput = () => { contactPage = 1; renderContacts(); }; $("#contactView").onchange = () => { contactPage = 1; renderContacts(); };
+$("#contactsPrevious").onclick = () => changeContactPage(-1);
+$("#contactsNext").onclick = () => changeContactPage(1);
+$("#exportContacts").onclick = exportAllContacts;
 $("#batchQuantity").oninput = updateBatchButton;
 $("#batchQuantity").onblur = () => {
   const quantity = readBatchQuantity();
@@ -977,7 +1011,7 @@ $("#batchQuantity").onblur = () => {
 };
 $("#contactsBody").onchange = (event) => { if (!event.target.classList.contains("contact-check")) return; const contact = state.contacts.find((item) => item.id === event.target.dataset.id); if (contact && !contact.campaignId) { contact.selected = event.target.checked; save(); } };
 $("#contactsBody").onclick = (event) => { if (!event.target.classList.contains("delete-contact")) return; state.contacts = state.contacts.filter((item) => item.id !== event.target.dataset.id); save(); };
-$("#selectAll").onchange = (event) => { const ids = new Set(visibleContacts().filter((item) => !item.campaignId).map((item) => item.id)); state.contacts.forEach((item) => { if (ids.has(item.id)) item.selected = event.target.checked; }); save(); };
+$("#selectAll").onchange = (event) => { const ids = new Set(contactPageRows().filter((item) => !item.campaignId).map((item) => item.id)); state.contacts.forEach((item) => { if (ids.has(item.id)) item.selected = event.target.checked; }); save(); };
 $("#clearSelection").onclick = () => { state.contacts.forEach((item) => { item.selected = false; }); save(); toast("Selection cleared"); };
 $("#selectBatch").onclick = () => { const quantity = readBatchQuantity(); if (!quantity) return toast("Enter a valid number to select"); let pool = state.contacts.filter((item) => !item.campaignId); state.contacts.forEach((item) => { item.selected = false; }); if ($('input[name="selectionOrder"]:checked').value === "random") pool = pool.map((value) => ({ value, sort: Math.random() })).sort((a, b) => a.sort - b.sort).map(({ value }) => value); pool.slice(0, quantity).forEach((item) => { item.selected = true; }); save(); toast(`${Math.min(quantity, pool.length)} contacts selected`); };
 $("#assignSelected").onclick = () => { const campaign = campaignById($("#assignCampaign").value); if (!campaign) return toast("Create or select a destination campaign"); const selected = state.contacts.filter((item) => item.selected && !item.campaignId); if (!selected.length) return toast("Select contacts first"); selected.forEach((item) => { item.selected = false; item.campaignId = campaign.id; item.deliveryStatus = "waiting"; }); campaign.updatedAt = Date.now(); if (campaign.status === "completed") campaign.status = "ready"; save(); toast(`${selected.length} contacts moved to ${campaign.name}`); };
